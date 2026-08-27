@@ -10,9 +10,3 @@ __pycache__/
 *.egg-info/
 build/
 dist/
-logs/*.json
-data/inbox/
-data/raw/
-data/normalized/
-data/derived/
-data/latest/

@@ -1,0 +1,12 @@
+{
+  "command": "import-robinhood",
+  "input": "data\\inbox\\robinhood\\hour-2026-08-26.json",
+  "rows": 4068,
+  "symbols": [
+    "AMD",
+    "PLTR",
+    "QQQ",
+    "SOXX"
+  ],
+  "timeframe": "1h"
+}

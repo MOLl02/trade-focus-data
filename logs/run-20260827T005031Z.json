@@ -1,0 +1,232 @@
+{
+  "command": "refresh",
+  "end": "2026-08-27 00:00:00+00:00",
+  "failures": [
+    {
+      "error": "Alpaca credentials are required to fill missing Robinhood data for CBRS 1d",
+      "symbol": "CBRS",
+      "timeframe": "1d"
+    }
+  ],
+  "start": "2021-08-26 00:00:00+00:00",
+  "statuses": [
+    {
+      "fallback_reason": null,
+      "rows": 1255,
+      "source": "robinhood",
+      "symbol": "AAOI",
+      "timeframe": "1d"
+    },
+    {
+      "fallback_reason": null,
+      "rows": 1254,
+      "source": "robinhood",
+      "symbol": "AAPL",
+      "timeframe": "1d"
+    },
+    {
+      "fallback_reason": null,
+      "rows": 1254,
+      "source": "robinhood",
+      "symbol": "AMD",
+      "timeframe": "1d"
+    },
+    {
+      "fallback_reason": null,
+      "rows": 1254,
+      "source": "robinhood",
+      "symbol": "AMZN",
+      "timeframe": "1d"
+    },
+    {
+      "fallback_reason": null,
+      "rows": 1254,
+      "source": "robinhood",
+      "symbol": "APP",
+      "timeframe": "1d"
+    },
+    {
+      "fallback_reason": null,
+      "rows": 1255,
+      "source": "robinhood",
+      "symbol": "AXTI",
+      "timeframe": "1d"
+    },
+    {
+      "fallback_reason": null,
+      "rows": 1254,
+      "source": "robinhood",
+      "symbol": "COHR",
+      "timeframe": "1d"
+    },
+    {
+      "fallback_reason": null,
+      "rows": 1254,
+      "source": "robinhood",
+      "symbol": "CRWD",
+      "timeframe": "1d"
+    },
+    {
+      "fallback_reason": null,
+      "rows": 354,
+      "source": "robinhood",
+      "symbol": "CRWV",
+      "timeframe": "1d"
+    },
+    {
+      "fallback_reason": null,
+      "rows": 1254,
+      "source": "robinhood",
+      "symbol": "FN",
+      "timeframe": "1d"
+    },
+    {
+      "fallback_reason": null,
+      "rows": 1254,
+      "source": "robinhood",
+      "symbol": "GH",
+      "timeframe": "1d"
+    },
+    {
+      "fallback_reason": null,
+      "rows": 1254,
+      "source": "robinhood",
+      "symbol": "GOOGL",
+      "timeframe": "1d"
+    },
+    {
+      "fallback_reason": null,
+      "rows": 1254,
+      "source": "robinhood",
+      "symbol": "LITE",
+      "timeframe": "1d"
+    },
+    {
+      "fallback_reason": null,
+      "rows": 1254,
+      "source": "robinhood",
+      "symbol": "LLY",
+      "timeframe": "1d"
+    },
+    {
+      "fallback_reason": null,
+      "rows": 1254,
+      "source": "robinhood",
+      "symbol": "META",
+      "timeframe": "1d"
+    },
+    {
+      "fallback_reason": null,
+      "rows": 1254,
+      "source": "robinhood",
+      "symbol": "MRVL",
+      "timeframe": "1d"
+    },
+    {
+      "fallback_reason": null,
+      "rows": 1254,
+      "source": "robinhood",
+      "symbol": "MSFT",
+      "timeframe": "1d"
+    },
+    {
+      "fallback_reason": null,
+      "rows": 1254,
+      "source": "robinhood",
+      "symbol": "MU",
+      "timeframe": "1d"
+    },
+    {
+      "fallback_reason": null,
+      "rows": 1255,
+      "source": "robinhood",
+      "symbol": "NBIS",
+      "timeframe": "1d"
+    },
+    {
+      "fallback_reason": null,
+      "rows": 1254,
+      "source": "robinhood",
+      "symbol": "NOW",
+      "timeframe": "1d"
+    },
+    {
+      "fallback_reason": null,
+      "rows": 1254,
+      "source": "robinhood",
+      "symbol": "NVDA",
+      "timeframe": "1d"
+    },
+    {
+      "fallback_reason": null,
+      "rows": 1254,
+      "source": "robinhood",
+      "symbol": "PLTR",
+      "timeframe": "1d"
+    },
+    {
+      "fallback_reason": null,
+      "rows": 1254,
+      "source": "robinhood",
+      "symbol": "QQQ",
+      "timeframe": "1d"
+    },
+    {
+      "fallback_reason": null,
+      "rows": 1255,
+      "source": "robinhood",
+      "symbol": "RDW",
+      "timeframe": "1d"
+    },
+    {
+      "fallback_reason": null,
+      "rows": 1254,
+      "source": "robinhood",
+      "symbol": "RKLB",
+      "timeframe": "1d"
+    },
+    {
+      "fallback_reason": null,
+      "rows": 1254,
+      "source": "robinhood",
+      "symbol": "SEDG",
+      "timeframe": "1d"
+    },
+    {
+      "fallback_reason": null,
+      "rows": 379,
+      "source": "robinhood",
+      "symbol": "SNDK",
+      "timeframe": "1d"
+    },
+    {
+      "fallback_reason": null,
+      "rows": 1254,
+      "source": "robinhood",
+      "symbol": "SOXX",
+      "timeframe": "1d"
+    },
+    {
+      "fallback_reason": null,
+      "rows": 51,
+      "source": "robinhood",
+      "symbol": "SPCX",
+      "timeframe": "1d"
+    },
+    {
+      "fallback_reason": null,
+      "rows": 1254,
+      "source": "robinhood",
+      "symbol": "TSLA",
+      "timeframe": "1d"
+    },
+    {
+      "fallback_reason": null,
+      "rows": 230,
+      "source": "robinhood",
+      "symbol": "WOLF",
+      "timeframe": "1d"
+    }
+  ],
+  "timeframe": "1d"
+}
