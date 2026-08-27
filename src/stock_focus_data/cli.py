@@ -45,6 +45,27 @@ def validate_config(
     typer.echo(f"{len(entries)} symbols; {stocks} stocks; {etfs} ETFs")
 
 
+@app.command("sample")
+def sample(root: Path = typer.Option(Path("data"))) -> None:
+    fixture = Path("tests/fixtures/robinhood_day.json")
+    frame = RobinhoodImportSource.load(
+        fixture, Timeframe.DAY, datetime.now(UTC)
+    )
+    store = CandleStore(root)
+    store.merge(frame)
+    daily = store.read("AMD", Timeframe.DAY)
+    weekly = aggregate_weekly(daily, datetime.now(UTC))
+    derived = root / "derived"
+    derived.mkdir(parents=True, exist_ok=True)
+    add_indicators(daily).to_parquet(
+        derived / "AMD-1d.parquet", index=False
+    )
+    add_indicators(weekly).to_parquet(
+        derived / "AMD-1w.parquet", index=False
+    )
+    typer.echo(f"sample complete: daily={len(daily)} weekly={len(weekly)}")
+
+
 @app.command("import-robinhood")
 def import_robinhood(
     input_path: Path = typer.Option(..., "--input"),

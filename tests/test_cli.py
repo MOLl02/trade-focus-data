@@ -44,3 +44,15 @@ def test_refresh_uses_complete_robinhood_import_without_credentials(
     )
     assert result.exit_code == 0, result.stdout
     assert "refreshed=1 failed=0" in result.stdout
+
+
+def test_sample_command_builds_local_daily_and_weekly_data(
+    tmp_path: Path,
+) -> None:
+    result = CliRunner().invoke(
+        app, ["sample", "--root", str(tmp_path / "sample-data")]
+    )
+    assert result.exit_code == 0, result.stdout
+    assert "sample complete: daily=3 weekly=1" in result.stdout
+    assert (tmp_path / "sample-data" / "derived" / "AMD-1d.parquet").exists()
+    assert (tmp_path / "sample-data" / "derived" / "AMD-1w.parquet").exists()
