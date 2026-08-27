@@ -1,0 +1,174 @@
+{
+  "version": "0.1",
+  "date": "2026-08-19",
+  "status": "research defaults; thresholds require backtesting",
+  "universe": {
+    "primary": "symbols from Robinhood watchlists snapshot",
+    "secondary": "broader liquid US equity/ETF market",
+    "broad_market_discovery": [
+      "high relative volume",
+      "large absolute percentage change",
+      "unusual gap",
+      "volatility expansion",
+      "compression near major levels"
+    ]
+  },
+  "history": {
+    "daily": "18 months baseline",
+    "weekly": "3 years baseline",
+    "intraday": "up to 60 trading days for entry timing when available",
+    "principle": "levels require both large-cycle and small-cycle confirmation"
+  },
+  "indicators": {
+    "trend": [
+      "EMA20",
+      "EMA50",
+      "EMA200",
+      "ADX14",
+      "Supertrend"
+    ],
+    "momentum": [
+      "RSI14",
+      "MACD(12,26,9)",
+      "ROC14"
+    ],
+    "volatility": [
+      "ATR14",
+      "Bollinger Bands(20,2)",
+      "Donchian20"
+    ],
+    "volume": [
+      "Volume",
+      "20D average volume",
+      "50D average volume",
+      "Relative Volume",
+      "OBV",
+      "MFI14",
+      "VWAP"
+    ],
+    "structure": [
+      "swing highs/lows",
+      "gap levels",
+      "prior breakout levels",
+      "weekly pivots",
+      "volume-confirmed support/resistance"
+    ]
+  },
+  "level_detection": {
+    "support_resistance": [
+      "cluster repeated daily/weekly swing highs and lows",
+      "weight recent touches but retain major 52-week pivots",
+      "prefer levels with multiple reactions and volume confirmation",
+      "treat gaps and failed breakout levels as supply/demand zones",
+      "use ATR-normalized zone width rather than single exact prices"
+    ],
+    "breakout_validation": [
+      "close through level, not just intraday wick",
+      "relative volume expansion preferred",
+      "follow-through or successful retest improves quality",
+      "reject breakout when price closes back inside base with distribution volume"
+    ]
+  },
+  "patterns": {
+    "capitulation_reversal_long": {
+      "idea": "consecutive decline / crash into a low area followed by exhaustion and reclaim",
+      "signals": [
+        "multi-day or multi-week drawdown",
+        "volume spike or selling climax",
+        "oversold momentum or bullish divergence",
+        "reclaim of prior-day high / EMA / broken support",
+        "tight invalidation under exhaustion low"
+      ]
+    },
+    "repair_rebound_long": {
+      "idea": "large asymmetric recovery after a severe decline when trend repair starts",
+      "signals": [
+        "base after deep drawdown",
+        "higher low and improving breadth/momentum",
+        "EMA20/EMA50 reclaim",
+        "room to next weekly resistance supports high reward/risk"
+      ]
+    },
+    "accumulation_breakout_long": {
+      "idea": "sideways accumulation / volatility compression before expansion",
+      "signals": [
+        "15-60 trading day base",
+        "declining ATR or Bollinger width",
+        "volume dries up on pullbacks",
+        "OBV/MFI stable or rising",
+        "breakout with relative-volume expansion"
+      ]
+    },
+    "oversold_reversal_long": {
+      "signals": [
+        "RSI/MFI oversold",
+        "price near daily/weekly support",
+        "bullish divergence or failed breakdown",
+        "reclaim confirmation"
+      ]
+    },
+    "failed_breakout_short": {
+      "signals": [
+        "price trades above known resistance then closes back below",
+        "upper wick / weak close",
+        "poor follow-through",
+        "volume does not confirm or becomes distribution volume",
+        "stop above failed-breakout high"
+      ]
+    },
+    "blowoff_distribution_short": {
+      "idea": "sharp rally followed by exhaustion/distribution",
+      "signals": [
+        "extreme multi-day extension from EMA20/EMA50",
+        "large volume spike",
+        "bearish momentum divergence",
+        "weak-volume continuation or reversal candle",
+        "break below intraday/daily support after exhaustion"
+      ]
+    },
+    "bearish_divergence_short": {
+      "signals": [
+        "higher price high with lower RSI/MACD/OBV confirmation",
+        "shrinking volume on advance",
+        "loss of breakout/retest level"
+      ]
+    }
+  },
+  "scoring": {
+    "components": [
+      "multi-timeframe structure",
+      "trend/momentum alignment",
+      "volume confirmation",
+      "volatility regime",
+      "support/resistance quality",
+      "catalyst/gap context",
+      "reward/risk"
+    ],
+    "minimum_reward_risk": 2.0,
+    "preference": "allow aggressive entries when upside/downside asymmetry is large, but always define invalidation"
+  },
+  "risk": {
+    "stop_methods": [
+      "beyond structural invalidation",
+      "ATR-buffered beyond support/resistance",
+      "beyond failed-breakout or exhaustion extreme"
+    ],
+    "position_sizing": "size from stop distance and fixed account-risk budget; do not size from conviction alone",
+    "avoid": [
+      "entering a breakout solely because price changed a lot",
+      "shorting strength without exhaustion/structure confirmation",
+      "ignoring earnings or event gap risk"
+    ]
+  },
+  "stress_test_examples_from_prior_discussion": {
+    "symbols": [
+      "MRNA",
+      "EL"
+    ],
+    "purpose": "verify that the broad-market detector catches sudden high-volume/high-change moves even when they are not in the focused watchlist"
+  },
+  "scan_schedule": [
+    "premarket",
+    "postmarket"
+  ]
+}

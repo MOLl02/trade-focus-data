@@ -1,0 +1,49 @@
+symbol,watchlist,role
+MU,First list,focus
+SNDK,First list,focus
+QQQ,First list,focus
+TSLA,First list,focus
+NVDA,First list,focus
+AAPL,First list,focus
+AMZN,First list,focus
+MSFT,First list,focus
+GOOGL,First list,focus
+AMD,First list,focus
+META,First list,focus
+SMZ,Short,short/inverse focus
+SQQQ,Short,short/inverse focus
+SOXS,Short,short/inverse focus
+SSPC,Short,short/inverse focus
+TSLQ,Short,short/inverse focus
+IGV,Mix,focus
+DISK,Mix,focus
+SOXX,Mix,focus
+SOXQ,Mix,focus
+VGT,Mix,focus
+MAGS,Mix,focus
+DRAM,Mix,focus
+TQQQ,Mix,focus
+QQQM,Mix,focus
+SPMO,Mix,focus
+SPY,Mix,focus
+SEDG,New,focus
+CBRS,New,focus
+RDW,New,focus
+LITZ,New,focus
+RKLX,New,focus
+LYTE,New,focus
+MRVL,New,focus
+AAOI,New,focus
+LITE,New,focus
+PLTR,New,focus
+SPCH,New,focus
+SNXX,New,focus
+LLY,Potential,focus
+NBIS,Potential,focus
+NOWL,Potential,focus
+AXTX,Potential,focus
+AXTI,Potential,focus
+NOW,Potential,focus
+APP,Potential,focus
+COHR,Potential,focus
+RKLB,Potential,focus

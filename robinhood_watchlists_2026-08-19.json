@@ -1,0 +1,143 @@
+{
+  "snapshot_date": "2026-08-19",
+  "source": "Robinhood connected watchlists",
+  "excluded": [
+    "brokerage account numbers",
+    "balances",
+    "positions",
+    "orders",
+    "tax lots",
+    "personally sensitive account data"
+  ],
+  "watchlists": [
+    {
+      "name": "First list",
+      "symbols": [
+        "MU",
+        "SNDK",
+        "QQQ",
+        "TSLA",
+        "NVDA",
+        "AAPL",
+        "AMZN",
+        "MSFT",
+        "GOOGL",
+        "AMD",
+        "META"
+      ],
+      "count": 11
+    },
+    {
+      "name": "Short",
+      "symbols": [
+        "SMZ",
+        "SQQQ",
+        "SOXS",
+        "SSPC",
+        "TSLQ"
+      ],
+      "count": 5
+    },
+    {
+      "name": "Mix",
+      "symbols": [
+        "IGV",
+        "DISK",
+        "SOXX",
+        "SOXQ",
+        "VGT",
+        "MAGS",
+        "DRAM",
+        "TQQQ",
+        "QQQM",
+        "SPMO",
+        "SPY"
+      ],
+      "count": 11
+    },
+    {
+      "name": "New",
+      "symbols": [
+        "SEDG",
+        "CBRS",
+        "RDW",
+        "LITZ",
+        "RKLX",
+        "LYTE",
+        "MRVL",
+        "AAOI",
+        "LITE",
+        "PLTR",
+        "SPCH",
+        "SNXX"
+      ],
+      "count": 12
+    },
+    {
+      "name": "Potential",
+      "symbols": [
+        "LLY",
+        "NBIS",
+        "NOWL",
+        "AXTX",
+        "AXTI",
+        "NOW",
+        "APP",
+        "COHR",
+        "RKLB"
+      ],
+      "count": 9
+    }
+  ],
+  "total_list_entries": 48,
+  "unique_symbols": [
+    "AAOI",
+    "AAPL",
+    "AMD",
+    "AMZN",
+    "APP",
+    "AXTI",
+    "AXTX",
+    "CBRS",
+    "COHR",
+    "DISK",
+    "DRAM",
+    "GOOGL",
+    "IGV",
+    "LITE",
+    "LITZ",
+    "LLY",
+    "LYTE",
+    "MAGS",
+    "META",
+    "MRVL",
+    "MSFT",
+    "MU",
+    "NBIS",
+    "NOW",
+    "NOWL",
+    "NVDA",
+    "PLTR",
+    "QQQ",
+    "QQQM",
+    "RDW",
+    "RKLB",
+    "RKLX",
+    "SEDG",
+    "SMZ",
+    "SNDK",
+    "SNXX",
+    "SOXQ",
+    "SOXS",
+    "SOXX",
+    "SPCH",
+    "SPMO",
+    "SPY",
+    "SQQQ",
+    "SSPC",
+    "TQQQ",
+    "TSLA",
+    "TSLQ",
+    "VGT"
+  ]
+}
