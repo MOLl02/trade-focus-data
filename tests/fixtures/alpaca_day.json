@@ -1,0 +1,19 @@
+{
+  "tool": "get_stock_bars",
+  "bars": {
+    "CBRS": [
+      {
+        "symbol": "CBRS",
+        "timestamp": "2026-08-26T04:00:00+00:00",
+        "open": 180.45,
+        "high": 184.21,
+        "low": 177.22,
+        "close": 182.245,
+        "volume": 195815,
+        "trade_count": 3097,
+        "vwap": 181.198841
+      }
+    ]
+  }
+}
+

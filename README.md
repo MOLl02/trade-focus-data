@@ -28,6 +28,7 @@ Robinhood is connected through Codex. Save the connector's unchanged structured 
 ```powershell
 stock-focus import-robinhood --input data/inbox/robinhood/day-2026-08-26.json --timeframe 1d
 stock-focus import-robinhood --input data/inbox/robinhood/hour-2026-08-26.json --timeframe 1h
+stock-focus import-alpaca --input data/inbox/alpaca/day-CBRS-2026-08-26.json --timeframe 1d
 stock-focus rebuild
 stock-focus summarize
 ```

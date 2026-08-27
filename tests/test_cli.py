@@ -46,6 +46,28 @@ def test_refresh_uses_complete_robinhood_import_without_credentials(
     assert "refreshed=1 failed=0" in result.stdout
 
 
+def test_import_alpaca_command_merges_connected_payload(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "data"
+    result = CliRunner().invoke(
+        app,
+        [
+            "import-alpaca",
+            "--input",
+            "tests/fixtures/alpaca_day.json",
+            "--timeframe",
+            "1d",
+            "--root",
+            str(root),
+        ],
+    )
+    assert result.exit_code == 0, result.stdout
+    assert "imported 1 rows" in result.stdout
+    partition = root / "normalized" / "timeframe=1d" / "symbol=CBRS"
+    assert list(partition.rglob("*.parquet"))
+
+
 def test_sample_command_builds_local_daily_and_weekly_data(
     tmp_path: Path,
 ) -> None:

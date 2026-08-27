@@ -5,6 +5,7 @@ import httpx
 
 from stock_focus_data.models import Timeframe
 from stock_focus_data.sources.alpaca import AlpacaSource
+from stock_focus_data.sources.alpaca_import import AlpacaImportSource
 
 
 def test_alpaca_normalizes_bars_and_retries_transient_failure(
@@ -61,3 +62,15 @@ def test_alpaca_normalizes_bars_and_retries_transient_failure(
     assert frame.iloc[0]["trade_count"] == 50
     assert frame.iloc[0]["fallback_reason"] == "robinhood_missing_or_incomplete"
 
+
+def test_parses_connected_alpaca_payload() -> None:
+    frame = AlpacaImportSource.load(
+        Path("tests/fixtures/alpaca_day.json"),
+        Timeframe.DAY,
+        datetime(2026, 8, 26, 22, tzinfo=UTC),
+    )
+    assert len(frame) == 1
+    assert frame.iloc[0]["symbol"] == "CBRS"
+    assert frame.iloc[0]["close"] == 182.245
+    assert frame.iloc[0]["data_source"] == "alpaca"
+    assert frame.iloc[0]["fallback_reason"] == "robinhood_missing_or_incomplete"

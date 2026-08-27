@@ -12,6 +12,7 @@ from stock_focus_data.config import load_universe
 from stock_focus_data.indicators import add_indicators
 from stock_focus_data.models import Timeframe, empty_candle_frame
 from stock_focus_data.sources.alpaca import AlpacaSource
+from stock_focus_data.sources.alpaca_import import AlpacaImportSource
 from stock_focus_data.sources.robinhood_import import RobinhoodImportSource
 from stock_focus_data.storage import CandleStore, write_manifest
 from stock_focus_data.summaries import build_latest_summary
@@ -79,6 +80,28 @@ def import_robinhood(
     CandleStore(root).merge(validated)
     manifest = {
         "command": "import-robinhood",
+        "input": str(input_path),
+        "timeframe": timeframe.value,
+        "rows": len(validated),
+        "symbols": sorted(validated["symbol"].unique().tolist()),
+    }
+    path = write_manifest(root.parent, manifest)
+    typer.echo(f"imported {len(validated)} rows; manifest={path}")
+
+
+@app.command("import-alpaca")
+def import_alpaca(
+    input_path: Path = typer.Option(..., "--input"),
+    timeframe: Timeframe = typer.Option(...),
+    root: Path = typer.Option(Path("data")),
+) -> None:
+    frame = AlpacaImportSource.load(
+        input_path, timeframe, datetime.now(UTC)
+    )
+    validated = validate_candles(frame)
+    CandleStore(root).merge(validated)
+    manifest = {
+        "command": "import-alpaca",
         "input": str(input_path),
         "timeframe": timeframe.value,
         "rows": len(validated),
