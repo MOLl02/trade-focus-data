@@ -2,6 +2,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import httpx
+import pandas as pd
 
 from stock_focus_data.models import Timeframe
 from stock_focus_data.sources.alpaca import AlpacaSource
@@ -72,5 +73,20 @@ def test_parses_connected_alpaca_payload() -> None:
     assert len(frame) == 1
     assert frame.iloc[0]["symbol"] == "CBRS"
     assert frame.iloc[0]["close"] == 182.245
+    assert frame.iloc[0]["timestamp_utc"] == pd.Timestamp(
+        "2026-08-26T00:00:00Z"
+    )
     assert frame.iloc[0]["data_source"] == "alpaca"
     assert frame.iloc[0]["fallback_reason"] == "robinhood_missing_or_incomplete"
+
+
+def test_connected_alpaca_hourly_import_keeps_regular_session_only() -> None:
+    frame = AlpacaImportSource.load(
+        Path("tests/fixtures/alpaca_hour.json"),
+        Timeframe.HOUR,
+        datetime(2026, 8, 26, 22, tzinfo=UTC),
+    )
+    assert len(frame) == 1
+    assert frame.iloc[0]["timestamp_utc"] == pd.Timestamp(
+        "2026-08-26T13:00:00Z"
+    )

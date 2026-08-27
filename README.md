@@ -36,18 +36,18 @@ stock-focus summarize
 To apply Robinhood-first selection and Alpaca fallback across the configured universe, use `refresh` with one or more connector payloads:
 
 ```powershell
-stock-focus refresh --robinhood-input data/inbox/robinhood/day-2026-08-26.json --timeframe 1d --start 2021-08-26T00:00:00Z --end 2026-08-27T00:00:00Z
+stock-focus refresh --robinhood-input data/inbox/robinhood/day-2026-08-26.json --timeframe 1d --start 2024-08-27T00:00:00Z --end 2026-08-27T00:00:00Z
 ```
 
-Raw imports, generated data, logs, and `.env` are ignored by Git. The canonical normalized history is partitioned Parquet under `data/normalized/`; calculated histories are under `data/derived/`; `data/latest/focus_summary.csv` is the compact current view.
+Raw provider imports, generated data, and run logs are tracked in Git. Credentials in `.env`, installed dependencies, caches, and build artifacts remain excluded. The canonical normalized history is partitioned Parquet under `data/normalized/`; calculated histories are under `data/derived/`; `data/latest/focus_summary.csv` is the compact current view.
 
 ## Data defaults
 
-- Hourly backfill: 365 calendar days
-- Daily backfill: five calendar years
+- Hourly retention: latest one calendar year
+- Daily retention: latest two calendar years
 - Weekly bars: derived from validated daily bars
-- Regular market session, split-adjusted prices
-- Robinhood wins duplicate timestamps; Alpaca fills unavailable symbol/range data
+- Regular market session; Robinhood bars are split-adjusted
+- Robinhood wins duplicate timestamps; Alpaca SIP daily and IEX hourly data fill unavailable symbol/range data
 
 ## Indicators
 

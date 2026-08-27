@@ -1,0 +1,29 @@
+{
+  "data": {
+    "results": [
+      {
+        "symbol": "CBRS",
+        "bars": [
+          {
+            "begins_at": "2026-05-14T00:00:00Z",
+            "open_price": "185.0",
+            "high_price": "386.34",
+            "low_price": "300.0",
+            "close_price": "311.07",
+            "volume": 33497870,
+            "session": "reg"
+          },
+          {
+            "begins_at": "2026-05-15T00:00:00Z",
+            "open_price": "310.0",
+            "high_price": "320.0",
+            "low_price": "305.0",
+            "close_price": "315.0",
+            "volume": 1000000,
+            "session": "reg"
+          }
+        ]
+      }
+    ]
+  }
+}
