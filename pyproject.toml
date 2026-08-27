@@ -1,0 +1,30 @@
+[build-system]
+requires = ["hatchling>=1.25,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "stock-focus-data"
+version = "0.1.0"
+description = "Local Robinhood-first market data store and indicator pipeline"
+requires-python = ">=3.11"
+dependencies = [
+  "httpx>=0.27,<1",
+  "pandas>=2.2,<3",
+  "pyarrow>=16,<24",
+  "python-dotenv>=1,<2",
+  "PyYAML>=6,<7",
+  "typer>=0.12,<1",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8,<10"]
+
+[project.scripts]
+stock-focus = "stock_focus_data.cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/stock_focus_data"]
+
+[tool.pytest.ini_options]
+addopts = "-ra --basetemp=.pytest-tmp"
+testpaths = ["tests"]

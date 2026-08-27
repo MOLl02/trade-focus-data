@@ -1,0 +1,34 @@
+symbols:
+  - {symbol: AAOI, asset_type: stock}
+  - {symbol: AAPL, asset_type: stock}
+  - {symbol: AMD, asset_type: stock}
+  - {symbol: AMZN, asset_type: stock}
+  - {symbol: APP, asset_type: stock}
+  - {symbol: AXTI, asset_type: stock}
+  - {symbol: CBRS, asset_type: stock}
+  - {symbol: COHR, asset_type: stock}
+  - {symbol: CRWD, asset_type: stock}
+  - {symbol: CRWV, asset_type: stock}
+  - {symbol: FN, asset_type: stock}
+  - {symbol: GH, asset_type: stock}
+  - {symbol: GOOGL, asset_type: stock}
+  - {symbol: LITE, asset_type: stock}
+  - {symbol: LLY, asset_type: stock}
+  - {symbol: META, asset_type: stock}
+  - {symbol: MRVL, asset_type: stock}
+  - {symbol: MSFT, asset_type: stock}
+  - {symbol: MU, asset_type: stock}
+  - {symbol: NBIS, asset_type: stock}
+  - {symbol: NOW, asset_type: stock}
+  - {symbol: NVDA, asset_type: stock}
+  - {symbol: PLTR, asset_type: stock}
+  - {symbol: QQQ, asset_type: etf}
+  - {symbol: RDW, asset_type: stock}
+  - {symbol: RKLB, asset_type: stock}
+  - {symbol: SEDG, asset_type: stock}
+  - {symbol: SNDK, asset_type: stock}
+  - {symbol: SOXX, asset_type: etf}
+  - {symbol: SPCX, asset_type: stock}
+  - {symbol: TSLA, asset_type: stock}
+  - {symbol: WOLF, asset_type: stock}
+
