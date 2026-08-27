@@ -1,0 +1,19 @@
+{
+  "data": {
+    "results": [
+      {
+        "symbol": "AMD",
+        "interval": "day",
+        "bounds": "regular",
+        "bars": [
+          {"begins_at": "2026-08-24T00:00:00Z", "open_price": "180.00", "high_price": "185.00", "low_price": "179.00", "close_price": "184.00", "volume": 42000000, "session": "reg"},
+          {"begins_at": "2026-08-25T00:00:00Z", "open_price": "184.00", "high_price": "188.00", "low_price": "183.00", "close_price": "187.00", "volume": 45000000, "session": "reg"},
+          {"begins_at": "2026-08-26T00:00:00Z", "open_price": "187.00", "high_price": "189.00", "low_price": "184.00", "close_price": "186.00", "volume": 41000000, "session": "reg", "interpolated": false},
+          {"begins_at": "2026-08-27T00:00:00Z", "open_price": "186.00", "high_price": "186.00", "low_price": "186.00", "close_price": "186.00", "volume": 0, "session": "reg", "interpolated": true}
+        ]
+      }
+    ]
+  },
+  "guide": "Fixed test fixture"
+}
+
