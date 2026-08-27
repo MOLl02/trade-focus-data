@@ -3,7 +3,8 @@ from pathlib import Path
 import pandas as pd
 
 from stock_focus_data.models import Timeframe
-from stock_focus_data.storage import CandleStore
+import stock_focus_data.storage as storage_module
+from stock_focus_data.storage import CandleStore, write_manifest
 
 
 def candle(source: str, close: float, retrieved: str) -> pd.DataFrame:
@@ -40,3 +41,19 @@ def test_merge_is_idempotent_and_prefers_robinhood(tmp_path: Path) -> None:
     assert result.iloc[0]["data_source"] == "robinhood"
     assert result.iloc[0]["close"] == 11.0
 
+
+def test_manifests_do_not_collide_within_same_second(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    class FixedDatetime:
+        @classmethod
+        def now(cls, timezone):
+            return pd.Timestamp("2026-08-26T22:00:00Z").to_pydatetime()
+
+    monkeypatch.setattr(storage_module, "datetime", FixedDatetime)
+    first = write_manifest(tmp_path, {"run": 1})
+    second = write_manifest(tmp_path, {"run": 2})
+    assert first != second
+    assert first.exists()
+    assert second.exists()

@@ -91,9 +91,12 @@ def write_manifest(root: Path, manifest: dict[str, object]) -> Path:
     directory.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     target = directory / f"run-{stamp}.json"
+    sequence = 1
+    while target.exists():
+        target = directory / f"run-{stamp}-{sequence:02d}.json"
+        sequence += 1
     target.write_text(
         json.dumps(manifest, indent=2, sort_keys=True, default=str) + "\n",
         encoding="utf-8",
     )
     return target
-
