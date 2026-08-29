@@ -2,6 +2,8 @@
 
 Local Robinhood-first OHLCV storage and technical analysis for 32 approved focus symbols. QQQ and SOXX are the only ETFs. This project stores research data and cannot place trades.
 
+Detailed retrieval, schema, Python, Excel, Git, and troubleshooting instructions are in [`docs/DATA_USAGE_GUIDE.md`](docs/DATA_USAGE_GUIDE.md).
+
 ## Setup
 
 ```powershell
