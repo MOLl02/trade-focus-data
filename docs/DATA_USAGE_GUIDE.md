@@ -797,3 +797,51 @@ For everyday use:
 6. Treat every screen or indicator as research evidence, not an automatic trading decision.
 
 For the project overview and collection commands, also see the repository [`README.md`](../README.md).
+
+## 26. Support and resistance calculations
+
+Generate the latest levels after the regular market session data has been refreshed:
+
+```powershell
+stock-focus support-resistance
+```
+
+Select a historical common date or a different number of structural levels:
+
+```powershell
+stock-focus support-resistance --analysis-date 2026-09-01 --levels 3
+```
+
+`data/latest/support_resistance.csv` contains one row per configured symbol and opens directly in Excel. `data/derived/support_resistance_levels.parquet` contains one row per emitted level for Python analysis.
+
+```python
+import pandas as pd
+
+compact = pd.read_csv(
+    "data/latest/support_resistance.csv",
+    parse_dates=["price_timestamp_utc"],
+)
+levels = pd.read_parquet(
+    "data/derived/support_resistance_levels.parquet"
+)
+
+amd = compact.loc[compact["symbol"] == "AMD"]
+amd_levels = levels.loc[levels["symbol"] == "AMD"]
+print(amd.T)
+print(amd_levels)
+```
+
+The multi-timeframe method confirms strict swing highs and lows, weights weekly observations more than daily and hourly observations, applies recency decay, and clusters nearby prices using the larger of 0.5% of current price or 0.25 times daily ATR(14). Support 1 and resistance 1 are the nearest structural levels on each side of the analysis-date close. Touch count is the number of confirmed swing candidates in the cluster; strength score is the sum of timeframe and recency weights and is most useful within the same symbol.
+
+Classic pivots use reference high `H`, low `L`, and close `C`:
+
+```text
+P  = (H + L + C) / 3
+R1 = 2P - L       S1 = 2P - H
+R2 = P + (H - L)  S2 = P - (H - L)
+R3 = H + 2(P - L) S3 = L - 2(H - P)
+```
+
+Daily pivots use the common analysis-date bar and apply to the next session. Weekly pivots use the latest completed weekly bar. Null structural fields mean the retained history did not contain that many confirmed clusters; the program does not invent missing levels. `calculation_status=partial` and `warning` identify missing optional hourly or completed-weekly inputs.
+
+Support and resistance are descriptive historical reference areas. Price can cross them, gap through them, or stop short of them; they are not forecasts, guarantees, or trading recommendations.

@@ -55,6 +55,16 @@ Raw provider imports, generated data, and run logs are tracked in Git. Credentia
 
 RSI(14), MACD(12,26,9), SMA(20/50/200), EMA(12/26/50), ATR(14), stochastic %K/%D, relative and rolling volume, 1/5/20-bar returns, 20-bar realized volatility, running drawdown, moving-average distance, and 52-week range position.
 
+## Support and resistance
+
+After refreshing, rebuilding, and summarizing the market histories, calculate both multi-timeframe structural levels and classic daily/weekly pivots:
+
+```powershell
+stock-focus support-resistance
+```
+
+The compact 32-symbol view is `data/latest/support_resistance.csv`. Detailed level rows are in `data/derived/support_resistance_levels.parquet`. Structural levels are historical references derived from confirmed hourly, daily, and completed weekly swings; they are not guaranteed barriers or trading advice.
+
 ## Limitations
 
 The standalone code cannot authenticate to Robinhood. Robinhood payloads enter through the connected Codex import boundary. Live Alpaca fallback requires user-supplied API credentials. Phase one has no scheduler and does not publish to GitHub.
