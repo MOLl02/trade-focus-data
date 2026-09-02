@@ -3,9 +3,12 @@ import pandas as pd
 import pytest
 
 from stock_focus_data.support_resistance import (
+    LONG_COLUMNS,
+    calculate_symbol_levels,
     classic_pivots,
     cluster_candidates,
     clustering_tolerance,
+    compact_columns,
     find_swing_candidates,
     select_nearest_levels,
 )
@@ -211,3 +214,87 @@ def test_select_nearest_levels_orders_each_side_by_distance() -> None:
 def test_select_nearest_levels_rejects_invalid_count(count: int) -> None:
     with pytest.raises(ValueError, match="between 1 and 10"):
         select_nearest_levels(pd.DataFrame(), 100.0, count)
+
+
+def test_calculate_symbol_levels_builds_classic_and_structural_outputs() -> None:
+    daily_dates = pd.date_range("2025-12-01", periods=20, freq="B", tz="UTC")
+    daily = price_frame(
+        "1d",
+        daily_dates.astype(str).tolist(),
+        highs=[110 + index % 5 for index in range(20)],
+        lows=[90 - index % 4 for index in range(20)],
+        closes=[100 + index * 0.1 for index in range(20)],
+    )
+    daily.loc[daily.index[-1], ["high", "low", "close", "atr_14"]] = [
+        110.0,
+        90.0,
+        100.0,
+        4.0,
+    ]
+    hourly_dates = pd.date_range("2025-12-01", periods=21, freq="h", tz="UTC")
+    hourly = price_frame(
+        "1h",
+        hourly_dates.astype(str).tolist(),
+        highs=[100, 101, 102, 110, 102, 101, 100] * 3,
+        lows=[98, 97, 96, 90, 96, 97, 98] * 3,
+    )
+    weekly_dates = pd.date_range("2025-10-31", periods=8, freq="W-FRI", tz="UTC")
+    weekly = price_frame(
+        "1w",
+        weekly_dates.astype(str).tolist(),
+        highs=[108, 109, 120, 109, 108, 107, 130, 140],
+        lows=[92, 91, 80, 91, 92, 93, 70, 60],
+        closes=[100, 100, 100, 100, 100, 100, 100, 100],
+        complete=[True, True, True, True, True, True, False, False],
+    )
+
+    compact, long_rows = calculate_symbol_levels(
+        "AMD",
+        hourly,
+        daily,
+        weekly,
+        daily_dates[-1].date().isoformat(),
+        levels=3,
+    )
+    long = pd.DataFrame(long_rows, columns=LONG_COLUMNS)
+
+    assert compact["symbol"] == "AMD"
+    assert compact["current_price"] == 100.0
+    assert compact["daily_pivot"] == 100.0
+    assert compact["daily_s1"] == 90.0
+    assert compact["daily_r1"] == 110.0
+    assert compact["weekly_reference_period_end"] == (
+        weekly_dates[5].date().isoformat()
+    )
+    assert compact["calculation_status"] == "complete"
+    assert set(long["method"]) == {"classic", "multi_timeframe"}
+    assert set(long.loc[long["method"] == "classic", "reference_timeframe"]) == {
+        "1d",
+        "1w",
+    }
+    assert list(compact) == compact_columns(3)
+
+
+def test_calculate_symbol_levels_marks_missing_optional_history_partial() -> None:
+    daily = price_frame(
+        "1d",
+        ["2026-09-01"],
+        highs=[110.0],
+        lows=[90.0],
+        closes=[100.0],
+    )
+
+    compact, long_rows = calculate_symbol_levels(
+        "AMD",
+        pd.DataFrame(),
+        daily,
+        pd.DataFrame(),
+        "2026-09-01",
+        levels=3,
+    )
+
+    assert compact["calculation_status"] == "partial"
+    assert compact["warning"] == "missing_hourly|missing_completed_weekly"
+    assert compact["daily_pivot"] == 100.0
+    assert pd.isna(compact["weekly_pivot"])
+    assert {row["reference_timeframe"] for row in long_rows} == {"1d"}
