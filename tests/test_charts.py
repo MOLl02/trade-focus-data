@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -8,6 +9,7 @@ from stock_focus_data.charts import (
     build_manifest,
     build_symbol_figure,
     mark_drawn_levels,
+    publish_chart_site,
     render_index,
     render_level_table,
     render_symbol_page,
@@ -297,3 +299,118 @@ def test_manifest_is_complete_stable_and_has_no_wall_clock_time() -> None:
     ]
     assert [row["symbol"] for row in decoded["symbols"]] == ["AMD", "SPCX"]
     assert "generated_at" not in decoded
+
+
+def support_history(symbol: str, timeframe: str) -> pd.DataFrame:
+    if timeframe == "1d":
+        frame = chart_daily_frame(start="2026-01-02", periods=175)
+        frame["symbol"] = symbol
+        frame["timeframe"] = timeframe
+        frame["atr_14"] = 4.0
+        return frame
+    if timeframe == "1h":
+        dates = pd.date_range("2026-06-01", periods=240, freq="h", tz="UTC")
+    else:
+        dates = pd.date_range("2026-01-02", periods=35, freq="W-FRI", tz="UTC")
+    base = np.linspace(90.0, 110.0, len(dates))
+    frame = pd.DataFrame(
+        {
+            "symbol": symbol,
+            "timeframe": timeframe,
+            "timestamp_utc": dates,
+            "session_date": dates.strftime("%Y-%m-%d"),
+            "open": base,
+            "high": base + 3.0 + np.sin(np.arange(len(dates))) * 2.0,
+            "low": base - 3.0 - np.sin(np.arange(len(dates))) * 2.0,
+            "close": base,
+            "volume": 1000,
+            "atr_14": 4.0,
+            "data_source": "robinhood" if timeframe != "1w" else "derived",
+        }
+    )
+    if timeframe == "1w":
+        frame["is_complete"] = True
+    return frame
+
+
+def write_chart_site_fixture(root: Path, symbols: tuple[str, ...]) -> None:
+    derived = root / "derived"
+    derived.mkdir(parents=True, exist_ok=True)
+    for symbol in symbols:
+        for timeframe in ("1h", "1d", "1w"):
+            support_history(symbol, timeframe).to_parquet(
+                derived / f"{symbol}-{timeframe}.parquet", index=False
+            )
+
+
+def test_publish_chart_site_writes_complete_offline_site(tmp_path: Path) -> None:
+    root = tmp_path / "data"
+    output_root = tmp_path / "charts" / "support_resistance"
+    entries = (
+        UniverseEntry("AMD", "stock"),
+        UniverseEntry("SPCX", "stock"),
+    )
+    write_chart_site_fixture(root, ("AMD", "SPCX"))
+
+    result = publish_chart_site(root, entries, output_root, levels=3)
+
+    target = output_root / result.analysis_date
+    assert result.symbol_count == 2
+    assert (target / "index.html").exists()
+    assert (target / "manifest.json").exists()
+    assert (target / "AMD.html").exists()
+    assert (target / "SPCX.html").exists()
+    assert (output_root.parent / "assets" / "plotly.min.js").exists()
+    assert "../../assets/plotly.min.js" in (target / "AMD.html").read_text(
+        encoding="utf-8"
+    )
+
+
+def test_publish_chart_site_is_byte_deterministic(tmp_path: Path) -> None:
+    root = tmp_path / "data"
+    output_root = tmp_path / "charts" / "support_resistance"
+    entries = (UniverseEntry("AMD", "stock"),)
+    write_chart_site_fixture(root, ("AMD",))
+
+    first = publish_chart_site(root, entries, output_root, levels=3)
+    target = output_root / first.analysis_date
+    hashes_before = {
+        path.name: path.read_bytes()
+        for path in sorted(target.iterdir())
+        if path.is_file()
+    }
+    publish_chart_site(root, entries, output_root, levels=3)
+    hashes_after = {
+        path.name: path.read_bytes()
+        for path in sorted(target.iterdir())
+        if path.is_file()
+    }
+
+    assert hashes_after == hashes_before
+
+
+def test_render_failure_preserves_existing_site(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import stock_focus_data.charts as charts_module
+
+    root = tmp_path / "data"
+    output_root = tmp_path / "charts" / "support_resistance"
+    entries = (UniverseEntry("AMD", "stock"),)
+    write_chart_site_fixture(root, ("AMD",))
+    analysis_date = str(support_history("AMD", "1d").iloc[-1]["session_date"])
+    target = output_root / analysis_date
+    target.mkdir(parents=True)
+    sentinel = target / "index.html"
+    sentinel.write_text("existing site", encoding="utf-8")
+
+    def fail_render(*args, **kwargs):
+        raise RuntimeError("render failed")
+
+    monkeypatch.setattr(charts_module, "render_symbol_page", fail_render)
+
+    with pytest.raises(RuntimeError, match="render failed"):
+        publish_chart_site(root, entries, output_root, levels=3)
+
+    assert sentinel.read_text(encoding="utf-8") == "existing site"

@@ -3,16 +3,22 @@ from __future__ import annotations
 import html
 import json
 import math
+import os
+import shutil
+import tempfile
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.io as pio
+from plotly.offline import get_plotlyjs
 from plotly.subplots import make_subplots
 
 from stock_focus_data.config import UniverseEntry
+from stock_focus_data.support_resistance import build_support_resistance
 
 
 SIDE_COLORS = {
@@ -69,6 +75,24 @@ class ChartHistory:
     zoom: pd.DataFrame
     candle_min: float
     candle_max: float
+
+
+@dataclass(frozen=True, slots=True)
+class ChartSiteResult:
+    analysis_date: str
+    symbol_count: int
+    output_directory: Path
+    index_path: Path
+    manifest_path: Path
+
+
+@dataclass(frozen=True, slots=True)
+class _ChartSiteBundle:
+    analysis_date: str
+    pages: dict[str, str]
+    index_html: str
+    manifest_json: str
+    plotly_javascript: str
 
 
 def select_chart_history(
@@ -576,3 +600,133 @@ def build_manifest(
 
 def serialize_manifest(payload: Mapping[str, object]) -> str:
     return json.dumps(payload, indent=2, sort_keys=True) + "\n"
+
+
+def _history_range(daily: pd.DataFrame, analysis_date: str) -> tuple[str, str]:
+    sessions = pd.to_datetime(daily["session_date"])
+    sessions = sessions.loc[sessions <= pd.Timestamp(analysis_date)]
+    if sessions.empty:
+        raise ValueError("daily chart history has no rows through analysis date")
+    return sessions.min().date().isoformat(), sessions.max().date().isoformat()
+
+
+def _build_chart_site(
+    data_root: Path,
+    entries: Sequence[UniverseEntry],
+    analysis_date: str | None,
+    levels: int,
+) -> _ChartSiteBundle:
+    compact, long, selected_date = build_support_resistance(
+        data_root,
+        entries,
+        analysis_date=analysis_date,
+        levels=levels,
+    )
+    compact_by_symbol = compact.set_index("symbol", drop=False)
+    pages: dict[str, str] = {}
+    history_ranges: dict[str, tuple[str, str]] = {}
+    symbols = [entry.symbol for entry in entries]
+    for index, entry in enumerate(entries):
+        daily_path = data_root / "derived" / f"{entry.symbol}-1d.parquet"
+        if not daily_path.exists():
+            raise ValueError(f"missing daily chart history for {entry.symbol}")
+        daily = pd.read_parquet(daily_path)
+        history = select_chart_history(daily, selected_date)
+        history_ranges[entry.symbol] = _history_range(daily, selected_date)
+        symbol_levels = long.loc[long["symbol"].eq(entry.symbol)].copy()
+        symbol_levels = mark_drawn_levels(
+            symbol_levels,
+            history.candle_min,
+            history.candle_max,
+        )
+        compact_row = compact_by_symbol.loc[entry.symbol].to_dict()
+        figure = build_symbol_figure(
+            entry.symbol,
+            history,
+            symbol_levels,
+            float(compact_row["current_price"]),
+        )
+        pages[f"{entry.symbol}.html"] = render_symbol_page(
+            entry,
+            selected_date,
+            compact_row,
+            symbol_levels,
+            figure,
+            previous_symbol=symbols[index - 1] if index > 0 else None,
+            next_symbol=(
+                symbols[index + 1] if index + 1 < len(symbols) else None
+            ),
+        )
+    manifest = build_manifest(entries, selected_date, history_ranges, levels)
+    return _ChartSiteBundle(
+        analysis_date=selected_date,
+        pages=pages,
+        index_html=render_index(entries, compact, selected_date),
+        manifest_json=serialize_manifest(manifest),
+        plotly_javascript=get_plotlyjs(),
+    )
+
+
+def _replace_directory(staged: Path, target: Path) -> None:
+    target.parent.mkdir(parents=True, exist_ok=True)
+    if staged.resolve().parent == target.resolve().parent:
+        raise ValueError("staging and target directories must be distinct")
+    backup = target.with_name(f".{target.name}.backup")
+    if backup.exists():
+        raise RuntimeError(f"stale chart backup requires inspection: {backup}")
+    if target.exists():
+        os.replace(target, backup)
+    try:
+        os.replace(staged, target)
+    except BaseException:
+        if backup.exists() and not target.exists():
+            os.replace(backup, target)
+        raise
+    if backup.exists():
+        if backup.resolve().parent != target.parent.resolve():
+            raise RuntimeError(
+                "refusing to remove chart backup outside target parent"
+            )
+        shutil.rmtree(backup)
+
+
+def publish_chart_site(
+    data_root: Path,
+    entries: Sequence[UniverseEntry],
+    output_root: Path,
+    analysis_date: str | None = None,
+    levels: int = 3,
+) -> ChartSiteResult:
+    bundle = _build_chart_site(data_root, entries, analysis_date, levels)
+    publication_parent = output_root.parent
+    publication_parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(
+        dir=publication_parent,
+        prefix=".support-resistance-chart-stage-",
+    ) as temporary_name:
+        temporary = Path(temporary_name)
+        staged_site = temporary / bundle.analysis_date
+        staged_site.mkdir()
+        for name, page in bundle.pages.items():
+            (staged_site / name).write_text(page, encoding="utf-8")
+        (staged_site / "index.html").write_text(
+            bundle.index_html, encoding="utf-8"
+        )
+        (staged_site / "manifest.json").write_text(
+            bundle.manifest_json, encoding="utf-8"
+        )
+        staged_asset = temporary / "plotly.min.js"
+        staged_asset.write_text(bundle.plotly_javascript, encoding="utf-8")
+
+        asset_target = output_root.parent / "assets" / "plotly.min.js"
+        asset_target.parent.mkdir(parents=True, exist_ok=True)
+        os.replace(staged_asset, asset_target)
+        target = output_root / bundle.analysis_date
+        _replace_directory(staged_site, target)
+    return ChartSiteResult(
+        analysis_date=bundle.analysis_date,
+        symbol_count=len(entries),
+        output_directory=target,
+        index_path=target / "index.html",
+        manifest_path=target / "manifest.json",
+    )
