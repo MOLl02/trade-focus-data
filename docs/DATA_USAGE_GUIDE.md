@@ -845,3 +845,23 @@ R3 = H + 2(P - L) S3 = L - 2(H - P)
 Daily pivots use the common analysis-date bar and apply to the next session. Weekly pivots use the latest completed weekly bar. Null structural fields mean the retained history did not contain that many confirmed clusters; the program does not invent missing levels. `calculation_status=partial` and `warning` identify missing optional hourly or completed-weekly inputs.
 
 Support and resistance are descriptive historical reference areas. Price can cross them, gap through them, or stop short of them; they are not forecasts, guarantees, or trading recommendations.
+
+## 27. Interactive support and resistance charts
+
+Run:
+
+```powershell
+stock-focus chart-support-resistance --analysis-date 2026-09-01
+```
+
+Open locally:
+
+```powershell
+Start-Process charts/support_resistance/2026-09-01/index.html
+```
+
+After cloning from GitHub, install the package dependencies, run the command when you want to regenerate charts, or open the committed date directory directly. GitHub's source-code preview does not execute repository HTML; download or clone the repository and open `index.html` in a browser.
+
+The upper panel shows up to two years of daily closes with SMA(50) and SMA(200). The lower panel shows six months of daily candlesticks. Hovering a candle shows OHLC, volume, RSI(14), and provider. Every structural level is drawn. Classic daily and weekly levels are drawn only inside the original zoom range, while the table always lists every calculated level.
+
+The pages load the shared local `charts/assets/plotly.min.js`, so they remain interactive without internet access. Regenerate them after refreshing, rebuilding, and recalculating data. These historical levels are research references, not forecasts or trading recommendations.

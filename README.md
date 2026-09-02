@@ -65,6 +65,14 @@ stock-focus support-resistance
 
 The compact 32-symbol view is `data/latest/support_resistance.csv`. Detailed level rows are in `data/derived/support_resistance_levels.parquet`. Structural levels are historical references derived from confirmed hourly, daily, and completed weekly swings; they are not guaranteed barriers or trading advice.
 
+Generate interactive history charts after refreshing and rebuilding:
+
+```powershell
+stock-focus chart-support-resistance --analysis-date 2026-09-01
+```
+
+Open `charts/support_resistance/2026-09-01/index.html` in a browser. The index links to one offline interactive chart for every configured symbol; all pages share `charts/assets/plotly.min.js`.
+
 ## Limitations
 
 The standalone code cannot authenticate to Robinhood. Robinhood payloads enter through the connected Codex import boundary. Live Alpaca fallback requires user-supplied API credentials. Phase one has no scheduler and does not publish to GitHub.
