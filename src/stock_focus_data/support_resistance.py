@@ -1,10 +1,14 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
+
+from stock_focus_data.config import UniverseEntry
 
 
 @dataclass(frozen=True, slots=True)
@@ -527,3 +531,91 @@ def calculate_symbol_levels(
         column: compact[column] for column in compact_columns(levels)
     }
     return ordered_compact, long_rows
+
+
+def latest_common_analysis_date(
+    daily_frames: Mapping[str, pd.DataFrame],
+    requested: str | None = None,
+) -> str:
+    """Select the latest daily session shared by every configured symbol."""
+    if not daily_frames:
+        raise ValueError("no daily histories are available")
+    date_sets: list[set[str]] = []
+    for symbol, frame in daily_frames.items():
+        if frame.empty or "session_date" not in frame.columns:
+            raise ValueError(f"missing daily history for {symbol}")
+        dates = {
+            pd.Timestamp(value).date().isoformat()
+            for value in frame["session_date"].astype(str)
+        }
+        date_sets.append(dates)
+    common = set.intersection(*date_sets)
+    if requested is not None:
+        selected = pd.Timestamp(requested).date().isoformat()
+        if selected not in common:
+            raise ValueError(
+                f"analysis date {selected} is not available for every symbol"
+            )
+        return selected
+    if not common:
+        raise ValueError("no common daily analysis date exists")
+    return max(common)
+
+
+def _read_history(root: Path, symbol: str, timeframe: str) -> pd.DataFrame:
+    path = root / "derived" / f"{symbol}-{timeframe}.parquet"
+    return pd.read_parquet(path) if path.exists() else pd.DataFrame()
+
+
+def build_support_resistance(
+    root: Path,
+    entries: Sequence[UniverseEntry],
+    analysis_date: str | None = None,
+    levels: int = 3,
+) -> tuple[pd.DataFrame, pd.DataFrame, str]:
+    """Build compact and long-form outputs in configured universe order."""
+    if levels < 1 or levels > 10:
+        raise ValueError("level count must be between 1 and 10")
+    symbols = [entry.symbol for entry in entries]
+    if not symbols:
+        raise ValueError("universe contains no symbols")
+    if len(symbols) != len(set(symbols)):
+        raise ValueError("universe contains duplicate symbols")
+    frames = {
+        symbol: {
+            timeframe: _read_history(root, symbol, timeframe)
+            for timeframe in ("1h", "1d", "1w")
+        }
+        for symbol in symbols
+    }
+    selected_date = latest_common_analysis_date(
+        {symbol: frame_map["1d"] for symbol, frame_map in frames.items()},
+        analysis_date,
+    )
+    compact_rows: list[dict[str, object]] = []
+    long_rows: list[dict[str, object]] = []
+    for symbol in symbols:
+        frame_map = frames[symbol]
+        compact, detail = calculate_symbol_levels(
+            symbol,
+            frame_map["1h"],
+            frame_map["1d"],
+            frame_map["1w"],
+            selected_date,
+            levels,
+        )
+        compact_rows.append(compact)
+        long_rows.extend(detail)
+    compact_frame = pd.DataFrame(
+        compact_rows,
+        columns=compact_columns(levels),
+    )
+    if (
+        len(compact_frame) != len(symbols)
+        or compact_frame["symbol"].nunique() != len(symbols)
+    ):
+        raise ValueError(
+            "compact output must contain one row per configured symbol"
+        )
+    long_frame = pd.DataFrame(long_rows, columns=LONG_COLUMNS)
+    return compact_frame, long_frame, selected_date

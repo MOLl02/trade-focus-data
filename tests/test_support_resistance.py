@@ -1,15 +1,20 @@
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import pytest
 
+from stock_focus_data.config import UniverseEntry
 from stock_focus_data.support_resistance import (
     LONG_COLUMNS,
+    build_support_resistance,
     calculate_symbol_levels,
     classic_pivots,
     cluster_candidates,
     clustering_tolerance,
     compact_columns,
     find_swing_candidates,
+    latest_common_analysis_date,
     select_nearest_levels,
 )
 
@@ -298,3 +303,84 @@ def test_calculate_symbol_levels_marks_missing_optional_history_partial() -> Non
     assert compact["daily_pivot"] == 100.0
     assert pd.isna(compact["weekly_pivot"])
     assert {row["reference_timeframe"] for row in long_rows} == {"1d"}
+
+
+def test_latest_common_analysis_date_selects_latest_intersection() -> None:
+    frames = {
+        "AMD": price_frame(
+            "1d",
+            ["2026-08-31", "2026-09-01"],
+            [11.0, 12.0],
+            [9.0, 10.0],
+            [10.0, 11.0],
+        ),
+        "PLTR": price_frame(
+            "1d",
+            ["2026-08-29", "2026-09-01"],
+            [21.0, 22.0],
+            [19.0, 20.0],
+            [20.0, 21.0],
+        ),
+    }
+
+    assert latest_common_analysis_date(frames) == "2026-09-01"
+    assert latest_common_analysis_date(frames, "2026-09-01") == "2026-09-01"
+    with pytest.raises(ValueError, match="not available for every symbol"):
+        latest_common_analysis_date(frames, "2026-08-31")
+
+
+def write_history(
+    root: Path,
+    symbol: str,
+    timeframe: str,
+    frame: pd.DataFrame,
+) -> None:
+    target = root / "derived" / f"{symbol}-{timeframe}.parquet"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    frame.to_parquet(target, index=False)
+
+
+def test_build_support_resistance_preserves_universe_order(tmp_path: Path) -> None:
+    root = tmp_path / "data"
+    entries = (
+        UniverseEntry("PLTR", "stock"),
+        UniverseEntry("AMD", "stock"),
+    )
+    for symbol, base in (("PLTR", 20.0), ("AMD", 100.0)):
+        daily = price_frame(
+            "1d",
+            ["2026-08-31", "2026-09-01"],
+            [base + 2.0, base + 2.0],
+            [base - 2.0, base - 2.0],
+            [base, base],
+        )
+        hourly = price_frame(
+            "1h",
+            pd.date_range(
+                "2026-08-31", periods=8, freq="h", tz="UTC"
+            ).astype(str).tolist(),
+            [base + value for value in [1, 2, 3, 4, 3, 2, 1, 2]],
+            [base - value for value in [1, 2, 3, 4, 3, 2, 1, 2]],
+        )
+        weekly = price_frame(
+            "1w",
+            ["2026-08-21", "2026-08-28", "2026-09-04"],
+            [base + 4.0, base + 5.0, base + 6.0],
+            [base - 4.0, base - 5.0, base - 6.0],
+            [base, base, base],
+            [True, True, False],
+        )
+        for frame in (daily, hourly, weekly):
+            frame["symbol"] = symbol
+        write_history(root, symbol, "1d", daily)
+        write_history(root, symbol, "1h", hourly)
+        write_history(root, symbol, "1w", weekly)
+
+    compact, long, selected_date = build_support_resistance(root, entries)
+
+    assert selected_date == "2026-09-01"
+    assert compact["symbol"].tolist() == ["PLTR", "AMD"]
+    assert len(compact) == 2
+    assert compact["symbol"].nunique() == 2
+    assert list(long.columns) == LONG_COLUMNS
+    assert set(long["symbol"]) == {"AMD", "PLTR"}
