@@ -360,7 +360,12 @@ def test_publish_chart_site_writes_complete_offline_site(tmp_path: Path) -> None
     assert (target / "manifest.json").exists()
     assert (target / "AMD.html").exists()
     assert (target / "SPCX.html").exists()
-    assert (output_root.parent / "assets" / "plotly.min.js").exists()
+    plotly_asset = output_root.parent / "assets" / "plotly.min.js"
+    assert plotly_asset.exists()
+    assert all(
+        line == line.rstrip()
+        for line in plotly_asset.read_text(encoding="utf-8").splitlines()
+    )
     assert "../../assets/plotly.min.js" in (target / "AMD.html").read_text(
         encoding="utf-8"
     )

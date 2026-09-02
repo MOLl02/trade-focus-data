@@ -658,12 +658,15 @@ def _build_chart_site(
             ),
         )
     manifest = build_manifest(entries, selected_date, history_ranges, levels)
+    plotly_javascript = "\n".join(
+        line.rstrip() for line in get_plotlyjs().splitlines()
+    ) + "\n"
     return _ChartSiteBundle(
         analysis_date=selected_date,
         pages=pages,
         index_html=render_index(entries, compact, selected_date),
         manifest_json=serialize_manifest(manifest),
-        plotly_javascript=get_plotlyjs(),
+        plotly_javascript=plotly_javascript,
     )
 
 
