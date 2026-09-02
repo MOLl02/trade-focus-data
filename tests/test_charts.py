@@ -1,12 +1,17 @@
+import json
+
 import numpy as np
 import pandas as pd
 import pytest
 
 from stock_focus_data.charts import (
+    build_manifest,
     build_symbol_figure,
     mark_drawn_levels,
+    render_index,
     render_level_table,
     render_symbol_page,
+    serialize_manifest,
     select_chart_history,
 )
 from stock_focus_data.config import UniverseEntry
@@ -226,3 +231,69 @@ def test_render_symbol_page_is_offline_escaped_and_deterministic() -> None:
     assert '<a href="AAPL.html">Previous</a>' in first
     assert '<a href="AMZN.html">Next</a>' in first
     assert "Research visualization only" in first
+
+
+def index_compact_frame() -> pd.DataFrame:
+    return pd.DataFrame(
+        [
+            {
+                "symbol": "AMD",
+                "current_price": 120.0,
+                "mt_support_1": 115.0,
+                "mt_resistance_1": 125.0,
+                "daily_pivot": 119.0,
+                "weekly_pivot": 117.0,
+                "calculation_status": "complete",
+            },
+            {
+                "symbol": "SPCX",
+                "current_price": 40.0,
+                "mt_support_1": 38.0,
+                "mt_resistance_1": 42.0,
+                "daily_pivot": 39.5,
+                "weekly_pivot": 41.0,
+                "calculation_status": "complete",
+            },
+        ]
+    )
+
+
+def test_render_index_is_searchable_and_preserves_universe_order() -> None:
+    entries = (
+        UniverseEntry("AMD", "stock"),
+        UniverseEntry("SPCX", "stock"),
+    )
+
+    page = render_index(entries, index_compact_frame(), "2026-09-01")
+
+    assert 'id="symbol-search"' in page
+    assert page.index("AMD.html") < page.index("SPCX.html")
+    assert "manifest.json" in page
+    assert "2026-09-01" in page
+
+
+def test_manifest_is_complete_stable_and_has_no_wall_clock_time() -> None:
+    entries = (
+        UniverseEntry("AMD", "stock"),
+        UniverseEntry("SPCX", "stock"),
+    )
+    ranges = {
+        "AMD": ("2024-08-27", "2026-09-01"),
+        "SPCX": ("2026-06-12", "2026-09-01"),
+    }
+
+    payload = build_manifest(entries, "2026-09-01", ranges, levels=3)
+    first = serialize_manifest(payload)
+    second = serialize_manifest(payload)
+
+    assert first == second
+    decoded = json.loads(first)
+    assert decoded["analysis_date"] == "2026-09-01"
+    assert decoded["files"] == [
+        "AMD.html",
+        "SPCX.html",
+        "index.html",
+        "manifest.json",
+    ]
+    assert [row["symbol"] for row in decoded["symbols"]] == ["AMD", "SPCX"]
+    assert "generated_at" not in decoded

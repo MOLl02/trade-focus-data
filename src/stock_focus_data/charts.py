@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import html
+import json
 import math
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
 import numpy as np
@@ -46,6 +47,18 @@ th:first-child, td:first-child, th:nth-child(2), td:nth-child(2) { text-align: l
 .pivot { color: #1d4ed8; }
 .note { color: #4b5563; font-size: 0.9rem; }
 @media (max-width: 1100px) { .layout { grid-template-columns: 1fr; } .table-wrap { max-height: none; } }
+""".strip()
+INDEX_STYLE = """
+body { margin: 0; padding: 24px; background: #f4f6f8; color: #111827; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+main { max-width: 1280px; margin: 0 auto; }
+input { width: min(100%, 420px); padding: 10px 12px; border: 1px solid #9ca3af; border-radius: 8px; font-size: 1rem; }
+.table-wrap { margin-top: 18px; overflow-x: auto; background: white; border: 1px solid #d1d5db; border-radius: 12px; }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: right; white-space: nowrap; }
+th:first-child, td:first-child, th:nth-child(2), td:nth-child(2) { text-align: left; }
+a { color: #1d4ed8; text-decoration: none; }
+a:hover { text-decoration: underline; }
+.note { color: #4b5563; }
 """.strip()
 
 
@@ -478,3 +491,88 @@ def render_symbol_page(
 </body>
 </html>
 """
+
+
+def render_index(
+    entries: Sequence[UniverseEntry],
+    compact: pd.DataFrame,
+    analysis_date: str,
+) -> str:
+    indexed = compact.set_index("symbol", drop=False)
+    rows: list[str] = []
+    for entry in entries:
+        if entry.symbol not in indexed.index:
+            raise ValueError(f"compact chart data missing {entry.symbol}")
+        record = indexed.loc[entry.symbol]
+        rows.append(
+            f'<tr data-symbol="{html.escape(entry.symbol)}">'
+            f'<td><a href="{html.escape(entry.symbol)}.html">'
+            f"{html.escape(entry.symbol)}</a></td>"
+            f"<td>{html.escape(entry.asset_type)}</td>"
+            f'<td>{_price(record["current_price"])}</td>'
+            f'<td>{_price(record.get("mt_support_1"))}</td>'
+            f'<td>{_price(record.get("mt_resistance_1"))}</td>'
+            f'<td>{_price(record.get("daily_pivot"))}</td>'
+            f'<td>{_price(record.get("weekly_pivot"))}</td>'
+            f'<td>{_text(record["calculation_status"])}</td></tr>'
+        )
+    return f"""<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Support and resistance charts — {html.escape(analysis_date)}</title>
+<style>{INDEX_STYLE}</style></head><body><main>
+<h1>Support and resistance charts</h1>
+<p class="note">Analysis date {html.escape(analysis_date)} · {len(entries)} symbols · <a href="manifest.json">Manifest</a></p>
+<label for="symbol-search">Search symbol</label><br>
+<input id="symbol-search" type="search" autocomplete="off" placeholder="AMD, QQQ, SPCX…">
+<div class="table-wrap"><table id="symbol-table"><thead><tr>
+<th>Symbol</th><th>Type</th><th>Close</th><th>Structural S1</th>
+<th>Structural R1</th><th>Daily P</th><th>Weekly P</th><th>Status</th>
+</tr></thead><tbody>{''.join(rows)}</tbody></table></div>
+<p class="note">Research visualization only. Historical levels are not forecasts or trading recommendations.</p>
+</main><script>
+const search = document.getElementById('symbol-search');
+search.addEventListener('input', () => {{
+  const query = search.value.trim().toUpperCase();
+  document.querySelectorAll('#symbol-table tbody tr').forEach((row) => {{
+    row.hidden = !row.dataset.symbol.includes(query);
+  }});
+}});
+</script></body></html>
+"""
+
+
+def build_manifest(
+    entries: Sequence[UniverseEntry],
+    analysis_date: str,
+    history_ranges: Mapping[str, tuple[str, str]],
+    levels: int,
+) -> dict[str, object]:
+    symbols = []
+    for entry in entries:
+        if entry.symbol not in history_ranges:
+            raise ValueError(f"manifest history range missing {entry.symbol}")
+        start, end = history_ranges[entry.symbol]
+        symbols.append(
+            {
+                "symbol": entry.symbol,
+                "asset_type": entry.asset_type,
+                "history_start": start,
+                "history_end": end,
+                "page": f"{entry.symbol}.html",
+            }
+        )
+    files = sorted([f"{entry.symbol}.html" for entry in entries])
+    files.extend(["index.html", "manifest.json"])
+    return {
+        "schema_version": 1,
+        "analysis_date": analysis_date,
+        "level_count_per_side": levels,
+        "plotly_asset": "../../assets/plotly.min.js",
+        "files": files,
+        "symbols": symbols,
+    }
+
+
+def serialize_manifest(payload: Mapping[str, object]) -> str:
+    return json.dumps(payload, indent=2, sort_keys=True) + "\n"
