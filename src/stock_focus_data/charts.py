@@ -1,12 +1,17 @@
 from __future__ import annotations
 
+import html
 import math
+from collections.abc import Mapping
 from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
+import plotly.io as pio
 from plotly.subplots import make_subplots
+
+from stock_focus_data.config import UniverseEntry
 
 
 SIDE_COLORS = {
@@ -19,6 +24,29 @@ METHOD_DASHES = {
     "1d": "dash",
     "1w": "dot",
 }
+PAGE_STYLE = """
+:root { color-scheme: light; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+body { margin: 0; background: #f4f6f8; color: #111827; }
+header, main, footer { max-width: 1680px; margin: 0 auto; padding: 18px 24px; }
+header { display: flex; gap: 20px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+nav { display: flex; gap: 12px; }
+a { color: #1d4ed8; text-decoration: none; }
+a:hover { text-decoration: underline; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; }
+.badge { border-radius: 999px; background: #e5e7eb; padding: 5px 10px; font-size: 0.88rem; }
+.layout { display: grid; grid-template-columns: minmax(0, 2fr) minmax(360px, 0.8fr); gap: 18px; align-items: start; }
+.panel { background: white; border: 1px solid #d1d5db; border-radius: 12px; box-shadow: 0 2px 8px rgb(15 23 42 / 8%); overflow: hidden; }
+.table-wrap { max-height: 960px; overflow: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+th, td { border-bottom: 1px solid #e5e7eb; padding: 7px 8px; text-align: right; white-space: nowrap; }
+th { position: sticky; top: 0; z-index: 1; background: #f8fafc; }
+th:first-child, td:first-child, th:nth-child(2), td:nth-child(2) { text-align: left; }
+.support { color: #147a43; }
+.resistance { color: #b42318; }
+.pivot { color: #1d4ed8; }
+.note { color: #4b5563; font-size: 0.9rem; }
+@media (max-width: 1100px) { .layout { grid-template-columns: 1fr; } .table-wrap { max-height: none; } }
+""".strip()
 
 
 @dataclass(frozen=True, slots=True)
@@ -321,3 +349,132 @@ def build_symbol_figure(
     )
     figure.update_xaxes(rangeslider_visible=False, row=2, col=1)
     return figure
+
+
+def _missing(value: object) -> bool:
+    return value is None or value is pd.NA or bool(pd.isna(value))
+
+
+def _text(value: object, fallback: str = "—") -> str:
+    return fallback if _missing(value) else html.escape(str(value))
+
+
+def _price(value: object) -> str:
+    return "—" if _missing(value) else f"{float(value):,.2f}"
+
+
+def _percent(value: object) -> str:
+    return "—" if _missing(value) else f"{float(value):+.2%}"
+
+
+def render_level_table(levels: pd.DataFrame) -> str:
+    rows: list[str] = []
+    for record in levels.to_dict("records"):
+        method = (
+            "Structural"
+            if record["method"] == "multi_timeframe"
+            else "Classic"
+        )
+        timeframe = (
+            "Multi"
+            if record["reference_timeframe"] == "multi"
+            else str(record["reference_timeframe"])
+        )
+        drawn = "Drawn" if bool(record["drawn_on_chart"]) else "Not drawn"
+        reference = record.get("reference_period_end")
+        if _missing(reference):
+            reference = record.get("last_touch_utc")
+        rows.append(
+            "<tr>"
+            f"<td>{method}</td><td>{html.escape(timeframe)}</td>"
+            f'<td class="{html.escape(str(record["side"]))}">'
+            f'{html.escape(str(record["level_name"]))}</td>'
+            f'<td>{_price(record["level_value"])}</td>'
+            f'<td>{_percent(record["distance_pct"])}</td>'
+            f'<td>{_text(record.get("touch_count"))}</td>'
+            f'<td>{_price(record.get("strength_score"))}</td>'
+            f'<td>{_text(record.get("contributing_timeframes"))}</td>'
+            f"<td>{_text(reference)}</td><td>{drawn}</td>"
+            "</tr>"
+        )
+    return (
+        '<div class="table-wrap"><table><thead><tr>'
+        "<th>Method</th><th>TF</th><th>Level</th><th>Value</th>"
+        "<th>Distance</th><th>Touches</th><th>Strength</th>"
+        "<th>Contributors</th><th>Reference</th><th>Chart</th>"
+        "</tr></thead><tbody>"
+        + "".join(rows)
+        + "</tbody></table></div>"
+    )
+
+
+def _nav_link(symbol: str | None, label: str) -> str:
+    if symbol is None:
+        return f'<span aria-disabled="true">{label}</span>'
+    safe_symbol = html.escape(symbol)
+    return f'<a href="{safe_symbol}.html">{label}</a>'
+
+
+def render_symbol_page(
+    entry: UniverseEntry,
+    analysis_date: str,
+    compact: Mapping[str, object],
+    levels: pd.DataFrame,
+    figure: go.Figure,
+    previous_symbol: str | None,
+    next_symbol: str | None,
+    plotly_asset_path: str = "../../assets/plotly.min.js",
+) -> str:
+    symbol = html.escape(entry.symbol)
+    warning = _text(compact.get("warning"), "None")
+    plot = pio.to_html(
+        figure,
+        include_plotlyjs=plotly_asset_path,
+        full_html=False,
+        div_id=f"support-resistance-{entry.symbol.lower()}",
+        config={
+            "responsive": True,
+            "displaylogo": False,
+            "scrollZoom": True,
+            "toImageButtonOptions": {
+                "format": "png",
+                "filename": (
+                    f"{entry.symbol}-support-resistance-{analysis_date}"
+                ),
+                "height": 960,
+                "width": 1500,
+                "scale": 2,
+            },
+        },
+    )
+    table = render_level_table(levels)
+    return f"""<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{symbol} support and resistance — {html.escape(analysis_date)}</title>
+  <style>{PAGE_STYLE}</style>
+</head>
+<body>
+<header>
+  <div>
+    <a href="index.html">← All symbols</a>
+    <h1>{symbol} support and resistance</h1>
+    <div class="badges">
+      <span class="badge">Analysis {html.escape(analysis_date)}</span>
+      <span class="badge">Close {_price(compact["current_price"])}</span>
+      <span class="badge">{_text(compact["calculation_status"])}</span>
+    </div>
+    <p class="note">Warning: {warning}</p>
+  </div>
+  <nav>{_nav_link(previous_symbol, "Previous")} {_nav_link(next_symbol, "Next")}</nav>
+</header>
+<main class="layout">
+  <section class="panel" aria-label="Interactive price chart">{plot}</section>
+  <section class="panel" aria-label="Complete level table">{table}</section>
+</main>
+<footer class="note">Research visualization only. Historical levels are not forecasts or trading recommendations.</footer>
+</body>
+</html>
+"""

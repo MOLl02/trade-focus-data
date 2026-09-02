@@ -5,8 +5,11 @@ import pytest
 from stock_focus_data.charts import (
     build_symbol_figure,
     mark_drawn_levels,
+    render_level_table,
+    render_symbol_page,
     select_chart_history,
 )
+from stock_focus_data.config import UniverseEntry
 
 
 def chart_daily_frame(
@@ -168,3 +171,58 @@ def test_build_symbol_figure_keeps_hover_fields_and_level_metadata() -> None:
         "classic",
     }
     assert all(trace.xaxis == "x2" for trace in level_traces)
+
+
+def test_render_level_table_lists_hidden_classic_levels() -> None:
+    levels = complete_level_frame()
+    levels["drawn_on_chart"] = [True, True, False]
+
+    table = render_level_table(levels)
+
+    assert "R3" in table
+    assert "150.00" in table
+    assert "Not drawn" in table
+    assert "1h|1d" in table
+
+
+def test_render_symbol_page_is_offline_escaped_and_deterministic() -> None:
+    daily = chart_daily_frame(start="2026-06-12", periods=55)
+    analysis_date = str(daily.iloc[-1]["session_date"])
+    history = select_chart_history(daily, analysis_date)
+    levels = mark_drawn_levels(
+        complete_level_frame(), history.candle_min, history.candle_max
+    )
+    figure = build_symbol_figure("AMD", history, levels, 120.0)
+    compact = {
+        "current_price": 120.0,
+        "calculation_status": "complete",
+        "warning": "<script>alert(1)</script>",
+    }
+
+    first = render_symbol_page(
+        UniverseEntry("AMD", "stock"),
+        analysis_date,
+        compact,
+        levels,
+        figure,
+        previous_symbol="AAPL",
+        next_symbol="AMZN",
+    )
+    second = render_symbol_page(
+        UniverseEntry("AMD", "stock"),
+        analysis_date,
+        compact,
+        levels,
+        figure,
+        previous_symbol="AAPL",
+        next_symbol="AMZN",
+    )
+
+    assert first == second
+    assert 'id="support-resistance-amd"' in first
+    assert "../../assets/plotly.min.js" in first
+    assert "cdn.plot.ly" not in first
+    assert "&lt;script&gt;alert(1)&lt;/script&gt;" in first
+    assert '<a href="AAPL.html">Previous</a>' in first
+    assert '<a href="AMZN.html">Next</a>' in first
+    assert "Research visualization only" in first
