@@ -8,6 +8,7 @@ import typer
 from dotenv import load_dotenv
 
 from stock_focus_data.aggregation import aggregate_weekly
+from stock_focus_data.charts import publish_chart_site
 from stock_focus_data.collection import collect_symbol
 from stock_focus_data.config import load_universe
 from stock_focus_data.indicators import add_indicators
@@ -309,4 +310,32 @@ def support_resistance(
         f"analysis_date={selected_date} symbols={len(compact)} "
         f"structural_levels={structural_count} "
         f"compact={compact_target} long={long_target}"
+    )
+
+
+@app.command("chart-support-resistance")
+def chart_support_resistance(
+    root: Path = typer.Option(Path("data")),
+    config: Path = typer.Option(Path("config/universe.yaml")),
+    output_root: Path = typer.Option(
+        Path("charts/support_resistance"),
+        "--output-root",
+    ),
+    analysis_date: str | None = typer.Option(None, "--analysis-date"),
+    levels: int = typer.Option(3, min=1, max=10),
+) -> None:
+    """Generate offline interactive history and level charts."""
+    try:
+        result = publish_chart_site(
+            root,
+            load_universe(config),
+            output_root,
+            analysis_date=analysis_date,
+            levels=levels,
+        )
+    except (KeyError, OSError, RuntimeError, TypeError, ValueError) as exc:
+        raise typer.BadParameter(str(exc)) from exc
+    typer.echo(
+        f"analysis_date={result.analysis_date} "
+        f"symbols={result.symbol_count} index={result.index_path}"
     )

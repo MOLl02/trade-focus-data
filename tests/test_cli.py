@@ -189,6 +189,64 @@ def test_support_resistance_failure_preserves_existing_outputs(
     assert long_path.read_text(encoding="utf-8") == "existing long\n"
 
 
+def test_chart_support_resistance_command_writes_site(tmp_path: Path) -> None:
+    root = tmp_path / "data"
+    config = tmp_path / "universe.yaml"
+    output_root = tmp_path / "charts" / "support_resistance"
+    write_cli_fixture(root, config)
+
+    result = CliRunner().invoke(
+        app,
+        [
+            "chart-support-resistance",
+            "--root",
+            str(root),
+            "--config",
+            str(config),
+            "--output-root",
+            str(output_root),
+            "--levels",
+            "3",
+        ],
+    )
+
+    assert result.exit_code == 0, result.stdout
+    assert "symbols=1" in result.stdout
+    assert "analysis_date=" in result.stdout
+    date_directories = [path for path in output_root.iterdir() if path.is_dir()]
+    assert len(date_directories) == 1
+    assert (date_directories[0] / "AMD.html").exists()
+    assert (date_directories[0] / "index.html").exists()
+
+
+def test_chart_support_resistance_rejects_unshared_date(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "data"
+    config = tmp_path / "universe.yaml"
+    output_root = tmp_path / "charts" / "support_resistance"
+    write_cli_fixture(root, config)
+
+    result = CliRunner().invoke(
+        app,
+        [
+            "chart-support-resistance",
+            "--root",
+            str(root),
+            "--config",
+            str(config),
+            "--output-root",
+            str(output_root),
+            "--analysis-date",
+            "1999-01-01",
+        ],
+    )
+
+    assert result.exit_code != 0
+    assert "not available for every symbol" in result.stderr
+    assert not output_root.exists()
+
+
 def test_summarize_ignores_support_resistance_parquet(
     tmp_path: Path,
     monkeypatch,
