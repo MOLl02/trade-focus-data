@@ -3,6 +3,7 @@ import pandas as pd
 import pytest
 
 from stock_focus_data.charts import (
+    build_symbol_figure,
     mark_drawn_levels,
     select_chart_history,
 )
@@ -105,3 +106,65 @@ def test_mark_drawn_levels_keeps_structural_and_filters_classic() -> None:
     result = mark_drawn_levels(chart_level_frame(), 80.0, 120.0)
 
     assert result["drawn_on_chart"].tolist() == [True, True, False]
+
+
+def complete_level_frame() -> pd.DataFrame:
+    frame = chart_level_frame()
+    frame.loc[1, "level_value"] = 110.0
+    frame["touch_count"] = [4, pd.NA, pd.NA]
+    frame["strength_score"] = [3.2, pd.NA, pd.NA]
+    frame["contributing_timeframes"] = ["1h|1d", pd.NA, pd.NA]
+    frame["last_touch_utc"] = [
+        pd.Timestamp("2026-08-28T19:00:00Z"),
+        pd.NaT,
+        pd.NaT,
+    ]
+    frame["reference_period_end"] = [pd.NA, "2026-09-01", "2026-08-28"]
+    return frame
+
+
+def test_build_symbol_figure_has_two_panels_and_required_traces() -> None:
+    daily = chart_daily_frame(start="2025-01-02", periods=430)
+    analysis_date = str(daily.iloc[-1]["session_date"])
+    history = select_chart_history(daily, analysis_date)
+    levels = mark_drawn_levels(
+        complete_level_frame(), history.candle_min, history.candle_max
+    )
+
+    figure = build_symbol_figure("AMD", history, levels, 120.0)
+
+    roles = [trace.meta["role"] for trace in figure.data]
+    assert roles.count("overview_close") == 1
+    assert roles.count("overview_sma_50") == 1
+    assert roles.count("overview_sma_200") == 1
+    assert roles.count("analysis_close") == 1
+    assert roles.count("candlestick") == 1
+    assert roles.count("level") == 2
+    assert figure.layout.yaxis.domain[0] > figure.layout.yaxis2.domain[1]
+    assert figure.layout.xaxis2.rangeslider.visible is False
+
+
+def test_build_symbol_figure_keeps_hover_fields_and_level_metadata() -> None:
+    daily = chart_daily_frame(start="2026-06-12", periods=55)
+    analysis_date = str(daily.iloc[-1]["session_date"])
+    history = select_chart_history(daily, analysis_date)
+    levels = mark_drawn_levels(
+        complete_level_frame(), history.candle_min, history.candle_max
+    )
+
+    figure = build_symbol_figure("SPCX", history, levels, 120.0)
+
+    candle = next(
+        trace for trace in figure.data if trace.meta["role"] == "candlestick"
+    )
+    assert "Volume" in candle.hovertemplate
+    assert "RSI(14)" in candle.hovertemplate
+    assert "Provider" in candle.hovertemplate
+    level_traces = [
+        trace for trace in figure.data if trace.meta["role"] == "level"
+    ]
+    assert {trace.meta["method"] for trace in level_traces} == {
+        "multi_timeframe",
+        "classic",
+    }
+    assert all(trace.xaxis == "x2" for trace in level_traces)
