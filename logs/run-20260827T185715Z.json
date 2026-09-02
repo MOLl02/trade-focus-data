@@ -1,0 +1,26 @@
+{
+  "command": "merge-connected-ranges",
+  "daily_window_start": "2024-08-27T00:00:00Z",
+  "hourly_window_start": "2025-08-27T00:00:00Z",
+  "imported": {
+    "alpaca-1d": {
+      "files": 4,
+      "rows": 14854
+    },
+    "alpaca-1h": {
+      "files": 8,
+      "rows": 53586
+    },
+    "robinhood-1d": {
+      "files": 4,
+      "rows": 14615
+    },
+    "robinhood-1h": {
+      "files": 4,
+      "rows": 31379
+    }
+  },
+  "removed_daily": 20358,
+  "removed_hourly": 0,
+  "retrieved_at": "2026-08-27 18:56:52.846176+00:00"
+}

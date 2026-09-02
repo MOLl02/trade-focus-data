@@ -28,6 +28,17 @@ class AlpacaImportSource:
                     timestamp = timestamp.tz_localize("UTC")
                 else:
                     timestamp = timestamp.tz_convert("UTC")
+                if timeframe is Timeframe.DAY:
+                    market_date = timestamp.tz_convert(
+                        "America/New_York"
+                    ).date()
+                    timestamp = pd.Timestamp(market_date, tz="UTC")
+                if timeframe is Timeframe.HOUR:
+                    market_hour = timestamp.tz_convert(
+                        "America/New_York"
+                    ).hour
+                    if market_hour < 9 or market_hour > 15:
+                        continue
                 rows.append(
                     {
                         "symbol": str(symbol).upper(),

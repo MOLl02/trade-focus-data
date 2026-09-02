@@ -2,6 +2,8 @@
 
 Local Robinhood-first OHLCV storage and technical analysis for 32 approved focus symbols. QQQ and SOXX are the only ETFs. This project stores research data and cannot place trades.
 
+Detailed retrieval, schema, Python, Excel, Git, and troubleshooting instructions are in [`docs/DATA_USAGE_GUIDE.md`](docs/DATA_USAGE_GUIDE.md).
+
 ## Setup
 
 ```powershell
@@ -36,22 +38,40 @@ stock-focus summarize
 To apply Robinhood-first selection and Alpaca fallback across the configured universe, use `refresh` with one or more connector payloads:
 
 ```powershell
-stock-focus refresh --robinhood-input data/inbox/robinhood/day-2026-08-26.json --timeframe 1d --start 2021-08-26T00:00:00Z --end 2026-08-27T00:00:00Z
+stock-focus refresh --robinhood-input data/inbox/robinhood/day-2026-08-26.json --timeframe 1d --start 2024-08-27T00:00:00Z --end 2026-08-27T00:00:00Z
 ```
 
-Raw imports, generated data, logs, and `.env` are ignored by Git. The canonical normalized history is partitioned Parquet under `data/normalized/`; calculated histories are under `data/derived/`; `data/latest/focus_summary.csv` is the compact current view.
+Raw provider imports, generated data, and run logs are tracked in Git. Credentials in `.env`, installed dependencies, caches, and build artifacts remain excluded. The canonical normalized history is partitioned Parquet under `data/normalized/`; calculated histories are under `data/derived/`; `data/latest/focus_summary.csv` is the compact current view.
 
 ## Data defaults
 
-- Hourly backfill: 365 calendar days
-- Daily backfill: five calendar years
+- Hourly retention: latest one calendar year
+- Daily retention: latest two calendar years
 - Weekly bars: derived from validated daily bars
-- Regular market session, split-adjusted prices
-- Robinhood wins duplicate timestamps; Alpaca fills unavailable symbol/range data
+- Regular market session; Robinhood bars are split-adjusted
+- Robinhood wins duplicate timestamps; Alpaca SIP daily and IEX hourly data fill unavailable symbol/range data
 
 ## Indicators
 
 RSI(14), MACD(12,26,9), SMA(20/50/200), EMA(12/26/50), ATR(14), stochastic %K/%D, relative and rolling volume, 1/5/20-bar returns, 20-bar realized volatility, running drawdown, moving-average distance, and 52-week range position.
+
+## Support and resistance
+
+After refreshing, rebuilding, and summarizing the market histories, calculate both multi-timeframe structural levels and classic daily/weekly pivots:
+
+```powershell
+stock-focus support-resistance
+```
+
+The compact 32-symbol view is `data/latest/support_resistance.csv`. Detailed level rows are in `data/derived/support_resistance_levels.parquet`. Structural levels are historical references derived from confirmed hourly, daily, and completed weekly swings; they are not guaranteed barriers or trading advice.
+
+Generate interactive history charts after refreshing and rebuilding:
+
+```powershell
+stock-focus chart-support-resistance --analysis-date 2026-09-01
+```
+
+Open `charts/support_resistance/2026-09-01/index.html` in a browser. The index links to one offline interactive chart for every configured symbol; all pages share `charts/assets/plotly.min.js`.
 
 ## Limitations
 

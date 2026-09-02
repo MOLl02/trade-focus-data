@@ -17,3 +17,12 @@ def test_parses_connector_payload_and_provenance() -> None:
     assert set(frame["data_source"]) == {"robinhood"}
     assert str(frame["timestamp_utc"].dtype) == "datetime64[ns, UTC]"
 
+
+def test_rejects_provider_bar_with_invalid_ohlc_relationship() -> None:
+    frame = RobinhoodImportSource.load(
+        Path("tests/fixtures/robinhood_invalid_ohlc.json"),
+        Timeframe.DAY,
+        datetime(2026, 8, 27, 20, 0, tzinfo=UTC),
+    )
+    assert len(frame) == 1
+    assert frame.iloc[0]["session_date"] == "2026-05-15"

@@ -32,16 +32,26 @@ class RobinhoodImportSource:
                     timestamp = timestamp.tz_localize("UTC")
                 else:
                     timestamp = timestamp.tz_convert("UTC")
+                open_price = float(bar["open_price"])
+                high_price = float(bar["high_price"])
+                low_price = float(bar["low_price"])
+                close_price = float(bar["close_price"])
+                if (
+                    low_price > min(open_price, close_price)
+                    or high_price < max(open_price, close_price)
+                    or low_price > high_price
+                ):
+                    continue
                 rows.append(
                     {
                         "symbol": symbol,
                         "timeframe": timeframe.value,
                         "timestamp_utc": timestamp,
                         "session_date": timestamp.date().isoformat(),
-                        "open": float(bar["open_price"]),
-                        "high": float(bar["high_price"]),
-                        "low": float(bar["low_price"]),
-                        "close": float(bar["close_price"]),
+                        "open": open_price,
+                        "high": high_price,
+                        "low": low_price,
+                        "close": close_price,
                         "volume": int(bar["volume"]),
                         "vwap": None,
                         "trade_count": None,

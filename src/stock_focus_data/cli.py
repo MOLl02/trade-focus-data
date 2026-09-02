@@ -1,4 +1,5 @@
 import os
+import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -7,6 +8,7 @@ import typer
 from dotenv import load_dotenv
 
 from stock_focus_data.aggregation import aggregate_weekly
+from stock_focus_data.charts import publish_chart_site
 from stock_focus_data.collection import collect_symbol
 from stock_focus_data.config import load_universe
 from stock_focus_data.indicators import add_indicators
@@ -15,6 +17,7 @@ from stock_focus_data.sources.alpaca import AlpacaSource
 from stock_focus_data.sources.alpaca_import import AlpacaImportSource
 from stock_focus_data.sources.robinhood_import import RobinhoodImportSource
 from stock_focus_data.storage import CandleStore, write_manifest
+from stock_focus_data.support_resistance import build_support_resistance
 from stock_focus_data.summaries import build_latest_summary
 from stock_focus_data.validation import validate_candles
 
@@ -230,7 +233,11 @@ def summarize(
     root: Path = typer.Option(Path("data")),
     config: Path = typer.Option(Path("config/universe.yaml")),
 ) -> None:
-    paths = sorted((root / "derived").glob("*.parquet"))
+    paths = sorted(
+        path
+        for timeframe in ("1h", "1d", "1w")
+        for path in (root / "derived").glob(f"*-{timeframe}.parquet")
+    )
     expected_symbols = [entry.symbol for entry in load_universe(config)]
     summary = build_latest_summary(
         (pd.read_parquet(path) for path in paths),
@@ -240,3 +247,95 @@ def summarize(
     target.parent.mkdir(parents=True, exist_ok=True)
     summary.to_csv(target, index=False)
     typer.echo(f"wrote {len(summary)} rows to {target}")
+
+
+def _write_support_resistance_outputs(
+    compact: pd.DataFrame,
+    long: pd.DataFrame,
+    compact_target: Path,
+    long_target: Path,
+) -> None:
+    """Stage both result files before replacing their published versions."""
+    compact_target.parent.mkdir(parents=True, exist_ok=True)
+    long_target.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(
+        dir=compact_target.parent,
+        suffix=".csv",
+        delete=False,
+    ) as handle:
+        compact_temporary = Path(handle.name)
+    with tempfile.NamedTemporaryFile(
+        dir=long_target.parent,
+        suffix=".parquet",
+        delete=False,
+    ) as handle:
+        long_temporary = Path(handle.name)
+    try:
+        compact.to_csv(compact_temporary, index=False)
+        long.to_parquet(long_temporary, index=False)
+        os.replace(compact_temporary, compact_target)
+        os.replace(long_temporary, long_target)
+    finally:
+        compact_temporary.unlink(missing_ok=True)
+        long_temporary.unlink(missing_ok=True)
+
+
+@app.command("support-resistance")
+def support_resistance(
+    root: Path = typer.Option(Path("data")),
+    config: Path = typer.Option(Path("config/universe.yaml")),
+    analysis_date: str | None = typer.Option(None, "--analysis-date"),
+    levels: int = typer.Option(3, min=1, max=10),
+) -> None:
+    """Calculate structural and classic levels for the configured universe."""
+    try:
+        compact, long, selected_date = build_support_resistance(
+            root,
+            load_universe(config),
+            analysis_date=analysis_date,
+            levels=levels,
+        )
+    except (KeyError, TypeError, ValueError) as exc:
+        raise typer.BadParameter(str(exc)) from exc
+    compact_target = root / "latest" / "support_resistance.csv"
+    long_target = root / "derived" / "support_resistance_levels.parquet"
+    _write_support_resistance_outputs(
+        compact,
+        long,
+        compact_target,
+        long_target,
+    )
+    structural_count = int((long["method"] == "multi_timeframe").sum())
+    typer.echo(
+        f"analysis_date={selected_date} symbols={len(compact)} "
+        f"structural_levels={structural_count} "
+        f"compact={compact_target} long={long_target}"
+    )
+
+
+@app.command("chart-support-resistance")
+def chart_support_resistance(
+    root: Path = typer.Option(Path("data")),
+    config: Path = typer.Option(Path("config/universe.yaml")),
+    output_root: Path = typer.Option(
+        Path("charts/support_resistance"),
+        "--output-root",
+    ),
+    analysis_date: str | None = typer.Option(None, "--analysis-date"),
+    levels: int = typer.Option(3, min=1, max=10),
+) -> None:
+    """Generate offline interactive history and level charts."""
+    try:
+        result = publish_chart_site(
+            root,
+            load_universe(config),
+            output_root,
+            analysis_date=analysis_date,
+            levels=levels,
+        )
+    except (KeyError, OSError, RuntimeError, TypeError, ValueError) as exc:
+        raise typer.BadParameter(str(exc)) from exc
+    typer.echo(
+        f"analysis_date={result.analysis_date} "
+        f"symbols={result.symbol_count} index={result.index_path}"
+    )

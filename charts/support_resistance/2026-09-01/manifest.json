@@ -1,0 +1,268 @@
+{
+  "analysis_date": "2026-09-01",
+  "files": [
+    "AAOI.html",
+    "AAPL.html",
+    "AMD.html",
+    "AMZN.html",
+    "APP.html",
+    "AXTI.html",
+    "CBRS.html",
+    "COHR.html",
+    "CRWD.html",
+    "CRWV.html",
+    "FN.html",
+    "GH.html",
+    "GOOGL.html",
+    "LITE.html",
+    "LLY.html",
+    "META.html",
+    "MRVL.html",
+    "MSFT.html",
+    "MU.html",
+    "NBIS.html",
+    "NOW.html",
+    "NVDA.html",
+    "PLTR.html",
+    "QQQ.html",
+    "RDW.html",
+    "RKLB.html",
+    "SEDG.html",
+    "SNDK.html",
+    "SOXX.html",
+    "SPCX.html",
+    "TSLA.html",
+    "WOLF.html",
+    "index.html",
+    "manifest.json"
+  ],
+  "level_count_per_side": 3,
+  "plotly_asset": "../../assets/plotly.min.js",
+  "schema_version": 1,
+  "symbols": [
+    {
+      "asset_type": "stock",
+      "history_end": "2026-09-01",
+      "history_start": "2024-08-27",
+      "page": "AAOI.html",
+      "symbol": "AAOI"
+    },
+    {
+      "asset_type": "stock",
+      "history_end": "2026-09-01",
+      "history_start": "2024-08-27",
+      "page": "AAPL.html",
+      "symbol": "AAPL"
+    },
+    {
+      "asset_type": "stock",
+      "history_end": "2026-09-01",
+      "history_start": "2024-08-27",
+      "page": "AMD.html",
+      "symbol": "AMD"
+    },
+    {
+      "asset_type": "stock",
+      "history_end": "2026-09-01",
+      "history_start": "2024-08-27",
+      "page": "AMZN.html",
+      "symbol": "AMZN"
+    },
+    {
+      "asset_type": "stock",
+      "history_end": "2026-09-01",
+      "history_start": "2024-08-27",
+      "page": "APP.html",
+      "symbol": "APP"
+    },
+    {
+      "asset_type": "stock",
+      "history_end": "2026-09-01",
+      "history_start": "2024-08-27",
+      "page": "AXTI.html",
+      "symbol": "AXTI"
+    },
+    {
+      "asset_type": "stock",
+      "history_end": "2026-09-01",
+      "history_start": "2026-05-14",
+      "page": "CBRS.html",
+      "symbol": "CBRS"
+    },
+    {
+      "asset_type": "stock",
+      "history_end": "2026-09-01",
+      "history_start": "2024-08-27",
+      "page": "COHR.html",
+      "symbol": "COHR"
+    },
+    {
+      "asset_type": "stock",
+      "history_end": "2026-09-01",
+      "history_start": "2024-08-27",
+      "page": "CRWD.html",
+      "symbol": "CRWD"
+    },
+    {
+      "asset_type": "stock",
+      "history_end": "2026-09-01",
+      "history_start": "2025-03-28",
+      "page": "CRWV.html",
+      "symbol": "CRWV"
+    },
+    {
+      "asset_type": "stock",
+      "history_end": "2026-09-01",
+      "history_start": "2024-08-27",
+      "page": "FN.html",
+      "symbol": "FN"
+    },
+    {
+      "asset_type": "stock",
+      "history_end": "2026-09-01",
+      "history_start": "2024-08-27",
+      "page": "GH.html",
+      "symbol": "GH"
+    },
+    {
+      "asset_type": "stock",
+      "history_end": "2026-09-01",
+      "history_start": "2024-08-27",
+      "page": "GOOGL.html",
+      "symbol": "GOOGL"
+    },
+    {
+      "asset_type": "stock",
+      "history_end": "2026-09-01",
+      "history_start": "2024-08-27",
+      "page": "LITE.html",
+      "symbol": "LITE"
+    },
+    {
+      "asset_type": "stock",
+      "history_end": "2026-09-01",
+      "history_start": "2024-08-27",
+      "page": "LLY.html",
+      "symbol": "LLY"
+    },
+    {
+      "asset_type": "stock",
+      "history_end": "2026-09-01",
+      "history_start": "2024-08-27",
+      "page": "META.html",
+      "symbol": "META"
+    },
+    {
+      "asset_type": "stock",
+      "history_end": "2026-09-01",
+      "history_start": "2024-08-27",
+      "page": "MRVL.html",
+      "symbol": "MRVL"
+    },
+    {
+      "asset_type": "stock",
+      "history_end": "2026-09-01",
+      "history_start": "2024-08-27",
+      "page": "MSFT.html",
+      "symbol": "MSFT"
+    },
+    {
+      "asset_type": "stock",
+      "history_end": "2026-09-01",
+      "history_start": "2024-08-27",
+      "page": "MU.html",
+      "symbol": "MU"
+    },
+    {
+      "asset_type": "stock",
+      "history_end": "2026-09-01",
+      "history_start": "2024-08-27",
+      "page": "NBIS.html",
+      "symbol": "NBIS"
+    },
+    {
+      "asset_type": "stock",
+      "history_end": "2026-09-01",
+      "history_start": "2024-08-27",
+      "page": "NOW.html",
+      "symbol": "NOW"
+    },
+    {
+      "asset_type": "stock",
+      "history_end": "2026-09-01",
+      "history_start": "2024-08-27",
+      "page": "NVDA.html",
+      "symbol": "NVDA"
+    },
+    {
+      "asset_type": "stock",
+      "history_end": "2026-09-01",
+      "history_start": "2024-08-27",
+      "page": "PLTR.html",
+      "symbol": "PLTR"
+    },
+    {
+      "asset_type": "etf",
+      "history_end": "2026-09-01",
+      "history_start": "2024-08-27",
+      "page": "QQQ.html",
+      "symbol": "QQQ"
+    },
+    {
+      "asset_type": "stock",
+      "history_end": "2026-09-01",
+      "history_start": "2024-08-27",
+      "page": "RDW.html",
+      "symbol": "RDW"
+    },
+    {
+      "asset_type": "stock",
+      "history_end": "2026-09-01",
+      "history_start": "2024-08-27",
+      "page": "RKLB.html",
+      "symbol": "RKLB"
+    },
+    {
+      "asset_type": "stock",
+      "history_end": "2026-09-01",
+      "history_start": "2024-08-27",
+      "page": "SEDG.html",
+      "symbol": "SEDG"
+    },
+    {
+      "asset_type": "stock",
+      "history_end": "2026-09-01",
+      "history_start": "2025-02-13",
+      "page": "SNDK.html",
+      "symbol": "SNDK"
+    },
+    {
+      "asset_type": "etf",
+      "history_end": "2026-09-01",
+      "history_start": "2024-08-27",
+      "page": "SOXX.html",
+      "symbol": "SOXX"
+    },
+    {
+      "asset_type": "stock",
+      "history_end": "2026-09-01",
+      "history_start": "2026-06-12",
+      "page": "SPCX.html",
+      "symbol": "SPCX"
+    },
+    {
+      "asset_type": "stock",
+      "history_end": "2026-09-01",
+      "history_start": "2024-08-27",
+      "page": "TSLA.html",
+      "symbol": "TSLA"
+    },
+    {
+      "asset_type": "stock",
+      "history_end": "2026-09-01",
+      "history_start": "2024-08-27",
+      "page": "WOLF.html",
+      "symbol": "WOLF"
+    }
+  ]
+}
