@@ -4,7 +4,10 @@ import pytest
 
 from stock_focus_data.support_resistance import (
     classic_pivots,
+    cluster_candidates,
+    clustering_tolerance,
     find_swing_candidates,
+    select_nearest_levels,
 )
 
 
@@ -125,3 +128,86 @@ def test_find_swing_candidates_excludes_incomplete_week() -> None:
 
     assert set(result["timestamp_utc"]) == {dates[2]}
     assert set(result["origin_kind"]) == {"swing_low", "swing_high"}
+
+
+def test_clustering_tolerance_uses_larger_price_or_atr_scale() -> None:
+    assert clustering_tolerance(100.0, 1.0) == 0.5
+    assert clustering_tolerance(100.0, 8.0) == 2.0
+    assert clustering_tolerance(100.0, np.nan) == 0.5
+
+
+def test_cluster_candidates_calculates_weighted_level_and_metadata() -> None:
+    candidates = pd.DataFrame(
+        [
+            {
+                "price": 90.0,
+                "timestamp_utc": pd.Timestamp("2026-08-01T00:00:00Z"),
+                "timeframe": "1h",
+                "origin_kind": "swing_low",
+                "candidate_weight": 1.0,
+            },
+            {
+                "price": 90.4,
+                "timestamp_utc": pd.Timestamp("2026-08-20T00:00:00Z"),
+                "timeframe": "1w",
+                "origin_kind": "swing_high",
+                "candidate_weight": 3.0,
+            },
+            {
+                "price": 95.0,
+                "timestamp_utc": pd.Timestamp("2026-08-25T00:00:00Z"),
+                "timeframe": "1d",
+                "origin_kind": "swing_low",
+                "candidate_weight": 2.0,
+            },
+        ]
+    )
+
+    result = cluster_candidates(candidates, current_price=100.0, atr_14=2.0)
+
+    assert len(result) == 2
+    first = result.iloc[0]
+    assert np.isclose(first["level_value"], 90.3)
+    assert first["touch_count"] == 2
+    assert first["strength_score"] == 4.0
+    assert first["contributing_timeframes"] == "1h|1w"
+    assert first["swing_low_count"] == 1
+    assert first["swing_high_count"] == 1
+    assert first["last_touch_utc"] == pd.Timestamp("2026-08-20T00:00:00Z")
+
+
+def test_select_nearest_levels_orders_each_side_by_distance() -> None:
+    clusters = pd.DataFrame(
+        {
+            "level_value": [90.0, 95.0, 99.0, 100.0, 101.0, 105.0, 110.0],
+            "touch_count": [1] * 7,
+            "strength_score": [1.0] * 7,
+            "contributing_timeframes": ["1d"] * 7,
+            "last_touch_utc": [pd.Timestamp("2026-08-01T00:00:00Z")] * 7,
+            "swing_low_count": [1] * 7,
+            "swing_high_count": [0] * 7,
+            "cluster_tolerance": [0.5] * 7,
+        }
+    )
+
+    result = select_nearest_levels(clusters, current_price=100.0, count=2)
+
+    assert result.loc[result["side"] == "support", "level_value"].tolist() == [
+        99.0,
+        95.0,
+    ]
+    assert result.loc[
+        result["side"] == "resistance", "level_value"
+    ].tolist() == [101.0, 105.0]
+    assert result.groupby("side")["rank"].apply(list).to_dict() == {
+        "resistance": [1, 2],
+        "support": [1, 2],
+    }
+    assert result.loc[result["side"] == "support", "distance_pct"].lt(0).all()
+    assert result.loc[result["side"] == "resistance", "distance_pct"].gt(0).all()
+
+
+@pytest.mark.parametrize("count", [0, 11])
+def test_select_nearest_levels_rejects_invalid_count(count: int) -> None:
+    with pytest.raises(ValueError, match="between 1 and 10"):
+        select_nearest_levels(pd.DataFrame(), 100.0, count)

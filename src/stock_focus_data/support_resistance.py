@@ -29,6 +29,19 @@ CANDIDATE_COLUMNS = [
     "candidate_weight",
 ]
 
+CLUSTER_COLUMNS = [
+    "level_value",
+    "touch_count",
+    "strength_score",
+    "contributing_timeframes",
+    "last_touch_utc",
+    "swing_low_count",
+    "swing_high_count",
+    "cluster_tolerance",
+]
+
+TIMEFRAME_ORDER = {"1h": 0, "1d": 1, "1w": 2}
+
 
 def classic_pivots(high: float, low: float, close: float) -> dict[str, float]:
     """Return classic floor-trader pivot levels for one completed bar."""
@@ -130,3 +143,134 @@ def find_swing_candidates(
                 }
             )
     return pd.DataFrame(rows, columns=CANDIDATE_COLUMNS)
+
+
+def clustering_tolerance(current_price: float, atr_14: float | None) -> float:
+    """Return a price- and volatility-scaled clustering radius."""
+    price = float(current_price)
+    if not math.isfinite(price) or price <= 0:
+        raise ValueError("current price must be finite and positive")
+    try:
+        atr = float(atr_14) if atr_14 is not None else math.nan
+    except (TypeError, ValueError):
+        atr = math.nan
+    atr_component = atr * 0.25 if math.isfinite(atr) and atr >= 0 else 0.0
+    return max(price * 0.005, atr_component)
+
+
+def cluster_candidates(
+    candidates: pd.DataFrame,
+    current_price: float,
+    atr_14: float | None,
+) -> pd.DataFrame:
+    """Cluster ascending swing prices using a rolling weighted centroid."""
+    tolerance = clustering_tolerance(current_price, atr_14)
+    if candidates.empty:
+        return pd.DataFrame(columns=CLUSTER_COLUMNS)
+    ordered = candidates.copy()
+    ordered["timestamp_utc"] = pd.to_datetime(
+        ordered["timestamp_utc"], utc=True
+    )
+    ordered = ordered.sort_values(
+        ["price", "timestamp_utc", "timeframe", "origin_kind"]
+    ).reset_index(drop=True)
+    clusters: list[dict[str, object]] = []
+    for record in ordered.to_dict("records"):
+        price = float(record["price"])
+        weight = float(record["candidate_weight"])
+        if not math.isfinite(price) or not math.isfinite(weight) or weight <= 0:
+            continue
+        if not clusters:
+            clusters.append(
+                {
+                    "weighted_price_sum": price * weight,
+                    "weight_sum": weight,
+                    "members": [record],
+                }
+            )
+            continue
+        current = clusters[-1]
+        centroid = float(current["weighted_price_sum"]) / float(
+            current["weight_sum"]
+        )
+        if abs(price - centroid) > tolerance:
+            clusters.append(
+                {
+                    "weighted_price_sum": price * weight,
+                    "weight_sum": weight,
+                    "members": [record],
+                }
+            )
+            continue
+        current["weighted_price_sum"] = (
+            float(current["weighted_price_sum"]) + price * weight
+        )
+        current["weight_sum"] = float(current["weight_sum"]) + weight
+        members = current["members"]
+        if not isinstance(members, list):
+            raise TypeError("cluster members must be a list")
+        members.append(record)
+
+    rows: list[dict[str, object]] = []
+    for cluster in clusters:
+        members = cluster["members"]
+        if not isinstance(members, list):
+            raise TypeError("cluster members must be a list")
+        timeframes = sorted(
+            {str(member["timeframe"]) for member in members},
+            key=TIMEFRAME_ORDER.__getitem__,
+        )
+        rows.append(
+            {
+                "level_value": float(cluster["weighted_price_sum"])
+                / float(cluster["weight_sum"]),
+                "touch_count": len(members),
+                "strength_score": float(cluster["weight_sum"]),
+                "contributing_timeframes": "|".join(timeframes),
+                "last_touch_utc": max(
+                    member["timestamp_utc"] for member in members
+                ),
+                "swing_low_count": sum(
+                    member["origin_kind"] == "swing_low" for member in members
+                ),
+                "swing_high_count": sum(
+                    member["origin_kind"] == "swing_high" for member in members
+                ),
+                "cluster_tolerance": tolerance,
+            }
+        )
+    return pd.DataFrame(rows, columns=CLUSTER_COLUMNS).sort_values(
+        "level_value"
+    ).reset_index(drop=True)
+
+
+def select_nearest_levels(
+    clusters: pd.DataFrame,
+    current_price: float,
+    count: int = 3,
+) -> pd.DataFrame:
+    """Classify clusters around price and return nearest levels on each side."""
+    if count < 1 or count > 10:
+        raise ValueError("level count must be between 1 and 10")
+    output_columns = [*CLUSTER_COLUMNS, "side", "rank", "distance_pct"]
+    if clusters.empty:
+        return pd.DataFrame(columns=output_columns)
+    support = (
+        clusters.loc[clusters["level_value"] < current_price]
+        .sort_values("level_value", ascending=False)
+        .head(count)
+        .copy()
+    )
+    resistance = (
+        clusters.loc[clusters["level_value"] > current_price]
+        .sort_values("level_value")
+        .head(count)
+        .copy()
+    )
+    support["side"] = "support"
+    resistance["side"] = "resistance"
+    support["rank"] = range(1, len(support) + 1)
+    resistance["rank"] = range(1, len(resistance) + 1)
+    result = pd.concat([support, resistance], ignore_index=True)
+    result["distance_pct"] = result["level_value"] / float(current_price) - 1.0
+    return result[output_columns]
